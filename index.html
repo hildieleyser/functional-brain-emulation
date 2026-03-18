@@ -1,0 +1,1461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FUNCTIONAL BRAIN EMULATION</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #000;
+    color: #fff;
+    font-family: 'Inter', -apple-system, sans-serif;
+    overflow: hidden;
+    cursor: crosshair;
+  }
+  body:active { cursor: grabbing; }
+  #canvas3d { position: fixed; top: 0; left: 0; width: 100%; height: 100%; }
+
+  /* ── Intro overlay ─────────────────────────────────────── */
+  #intro-overlay {
+    position: fixed; inset: 0; z-index: 100;
+    background: #000;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    transition: opacity 1.5s ease-out;
+  }
+  #intro-overlay.fade-out { opacity: 0; pointer-events: none; }
+  #intro-overlay h1 {
+    font-size: 42px; font-weight: 300; letter-spacing: 20px;
+    color: #fff; opacity: 0;
+    animation: fadeUp 2s ease-out 0.5s forwards;
+  }
+  #intro-overlay .subtitle {
+    font-size: 11px; letter-spacing: 8px; color: #334;
+    margin-top: 16px; opacity: 0;
+    animation: fadeUp 2s ease-out 1.2s forwards;
+  }
+  #intro-overlay .stats-line {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 3px; color: #223;
+    margin-top: 40px; opacity: 0;
+    animation: fadeUp 2s ease-out 1.8s forwards;
+  }
+  #intro-overlay .enter-btn {
+    margin-top: 60px; opacity: 0;
+    animation: fadeUp 2s ease-out 2.5s forwards;
+    background: transparent; border: 1px solid rgba(100,100,255,0.2);
+    color: #557; font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 4px;
+    padding: 12px 40px; cursor: pointer;
+    transition: all 0.4s;
+  }
+  .enter-btn:hover {
+    border-color: rgba(100,100,255,0.5);
+    color: #99b;
+    box-shadow: 0 0 30px rgba(80,80,200,0.15);
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── HUD ───────────────────────────────────────────────── */
+  .hud { position: fixed; z-index: 10; pointer-events: none; }
+  .hud-interactive { pointer-events: auto; }
+
+  #top-bar {
+    top: 0; left: 0; right: 0; height: 56px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 30px;
+    background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, transparent 100%);
+  }
+  #logo {
+    font-size: 13px; font-weight: 500; letter-spacing: 8px; color: #fff;
+    opacity: 0.7;
+  }
+  #logo span { color: #4455cc; }
+  #session-info {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 2px; color: #334;
+  }
+  #time-code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: #446; letter-spacing: 1px;
+  }
+  #time-code span { color: #668; }
+
+  /* ── Left panel: Data overview ─────────────────────────── */
+  #left-panel {
+    top: 70px; left: 20px; width: 240px;
+    opacity: 0; transition: opacity 1s;
+  }
+  #left-panel.visible { opacity: 1; }
+
+  .panel-card {
+    background: rgba(5,5,15,0.85);
+    border: 1px solid rgba(40,40,80,0.3);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+    backdrop-filter: blur(12px);
+  }
+  .panel-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px; letter-spacing: 3px; color: #335;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+  }
+
+  /* Stats grid */
+  .stat-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .stat-item { text-align: center; }
+  .stat-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 20px; font-weight: 300; color: #99b;
+  }
+  .stat-label {
+    font-size: 7px; letter-spacing: 2px; color: #334;
+    margin-top: 2px; text-transform: uppercase;
+  }
+
+  /* Modality list */
+  .mod-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 4px 0; border-bottom: 1px solid rgba(40,40,80,0.15);
+  }
+  .mod-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .mod-name {
+    font-size: 9px; color: #557; flex: 1;
+    letter-spacing: 0.5px;
+  }
+  .mod-channels {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px; color: #334;
+  }
+  .mod-bar-container {
+    width: 40px; height: 3px; background: rgba(30,30,60,0.5);
+    border-radius: 2px; overflow: hidden;
+  }
+  .mod-bar-fill {
+    height: 100%; border-radius: 2px;
+    transition: width 0.15s;
+  }
+
+  /* ── Right panel: Signals + Spectral ───────────────────── */
+  #right-panel {
+    top: 70px; right: 20px; width: 280px;
+    opacity: 0; transition: opacity 1s;
+  }
+  #right-panel.visible { opacity: 1; }
+
+  .trace-row {
+    display: flex; align-items: center; gap: 6px;
+    margin-bottom: 2px; height: 32px;
+  }
+  .trace-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 7px; letter-spacing: 1px; width: 65px;
+    text-align: right; flex-shrink: 0;
+  }
+  .trace-canvas {
+    flex: 1; height: 28px;
+    border-radius: 3px;
+    background: rgba(10,10,25,0.5);
+  }
+  .trace-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px; width: 28px; text-align: right;
+    color: #446;
+  }
+
+  /* Spectral bars */
+  .spectral-row {
+    display: flex; gap: 3px; align-items: flex-end;
+    height: 50px; padding: 0 4px;
+  }
+  .spectral-bar {
+    flex: 1; background: rgba(100,50,200,0.3);
+    border-radius: 2px 2px 0 0;
+    transition: height 0.3s, background 0.3s;
+    min-height: 2px;
+  }
+  .spectral-labels {
+    display: flex; gap: 3px; padding: 0 4px;
+  }
+  .spectral-lbl {
+    flex: 1; text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 7px; color: #335; letter-spacing: 0.5px;
+  }
+
+  /* ── Correlation matrix ────────────────────────────────── */
+  #corr-panel {
+    bottom: 80px; right: 20px;
+    opacity: 0; transition: opacity 1s;
+  }
+  #corr-panel.visible { opacity: 1; }
+  #corr-canvas { border-radius: 4px; }
+  .coupling-line {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px; color: #335;
+    margin-top: 3px;
+  }
+  .coupling-line.strong { color: #668; }
+
+  /* ── Video feeds ───────────────────────────────────────── */
+  #video-panel {
+    bottom: 80px; left: 20px;
+    display: flex; gap: 10px;
+    opacity: 0; transition: opacity 1s;
+  }
+  #video-panel.visible { opacity: 1; }
+  .video-feed {
+    position: relative;
+    border: 1px solid rgba(60,60,120,0.15);
+    border-radius: 6px;
+    overflow: hidden;
+    background: #030308;
+  }
+  .video-feed img { display: block; opacity: 0.8; }
+  .video-feed .vlabel {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: linear-gradient(transparent, rgba(0,0,0,0.9));
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 7px; letter-spacing: 2px;
+    color: #446; text-align: center; padding: 8px 4px 4px;
+  }
+
+  /* ── Timeline / Session selector ───────────────────────── */
+  #bottom-bar {
+    bottom: 0; left: 0; right: 0;
+    padding: 12px 30px 16px;
+    background: linear-gradient(0deg, rgba(0,0,0,0.9) 0%, transparent 100%);
+  }
+  #timeline-container {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 8px;
+  }
+  #timeline {
+    flex: 1; height: 3px;
+    -webkit-appearance: none; appearance: none;
+    background: rgba(40,40,80,0.4);
+    border-radius: 2px;
+    outline: none; cursor: pointer;
+  }
+  #timeline::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 12px; height: 12px;
+    background: #4455cc; border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 12px rgba(68,85,204,0.5);
+  }
+  #timeline-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; color: #446; min-width: 70px;
+  }
+
+  #session-tabs {
+    display: flex; gap: 6px; overflow-x: auto;
+    scrollbar-width: none;
+  }
+  #session-tabs::-webkit-scrollbar { display: none; }
+  .session-tab {
+    background: rgba(20,20,40,0.6);
+    border: 1px solid rgba(50,50,100,0.2);
+    border-radius: 4px;
+    padding: 5px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px; letter-spacing: 1px;
+    color: #446; cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.3s;
+  }
+  .session-tab:hover {
+    border-color: rgba(80,80,160,0.4);
+    color: #668;
+  }
+  .session-tab.active {
+    background: rgba(40,40,100,0.4);
+    border-color: rgba(100,100,200,0.4);
+    color: #99b;
+  }
+  .session-size {
+    color: #223; margin-left: 6px;
+  }
+
+  /* ── Controls ──────────────────────────────────────────── */
+  #controls-row {
+    display: flex; gap: 6px; align-items: center;
+    margin-top: 8px;
+  }
+  .ctrl-btn {
+    background: rgba(20,20,40,0.6);
+    border: 1px solid rgba(50,50,100,0.2);
+    border-radius: 4px;
+    padding: 4px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px; letter-spacing: 1px;
+    color: #446; cursor: pointer;
+    transition: all 0.3s;
+  }
+  .ctrl-btn:hover { border-color: rgba(80,80,160,0.4); color: #668; }
+  .ctrl-btn.active { background: rgba(50,50,120,0.4); color: #99b; border-color: rgba(100,100,200,0.4); }
+
+  /* ── Dominant modality callout ──────────────────────────── */
+  #dominant-callout {
+    top: 70px; left: 50%; transform: translateX(-50%);
+    text-align: center;
+    opacity: 0; transition: opacity 1s;
+  }
+  #dominant-callout.visible { opacity: 1; }
+  #dominant-name {
+    font-size: 11px; font-weight: 500; letter-spacing: 4px;
+    text-shadow: 0 0 30px currentColor;
+  }
+  #dominant-desc {
+    font-size: 8px; letter-spacing: 2px; color: #334;
+    margin-top: 4px;
+  }
+
+  /* ── Loading indicator ─────────────────────────────────── */
+  #loading {
+    position: fixed; inset: 0; z-index: 200;
+    background: #000;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column;
+  }
+  #loading.hidden { display: none; }
+  .loader-ring {
+    width: 40px; height: 40px;
+    border: 1px solid rgba(60,60,120,0.2);
+    border-top-color: #4455cc;
+    border-radius: 50%;
+    animation: spin 1.2s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #load-text {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 3px; color: #335;
+    margin-top: 20px;
+  }
+
+  /* ── Scanline effect ───────────────────────────────────── */
+  #scanline {
+    position: fixed; inset: 0; z-index: 5;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,10,0.03) 2px,
+      rgba(0,0,10,0.03) 4px
+    );
+  }
+</style>
+</head>
+<body>
+
+<!-- Loading -->
+<div id="loading">
+  <div class="loader-ring"></div>
+  <div id="load-text">LOADING NEURAL DATA</div>
+</div>
+
+<!-- Intro -->
+<div id="intro-overlay" style="display:none;">
+  <h1>FUNCTIONAL BRAIN EMULATION</h1>
+  <div class="subtitle">MULTI-MODAL NEURAL RECORDING</div>
+  <div class="stats-line" id="intro-stats"></div>
+  <button class="enter-btn" onclick="enterExperience()">ENTER EXPERIENCE</button>
+</div>
+
+<!-- Canvas -->
+<canvas id="canvas3d"></canvas>
+<div id="scanline"></div>
+
+<!-- Top bar -->
+<div id="top-bar" class="hud" style="opacity:0">
+  <div id="logo">FUNCTIONAL BRAIN <span>E</span>MULATION</div>
+  <div id="session-info"></div>
+  <div id="time-code">T+<span id="elapsed">000.0</span>s</div>
+</div>
+
+<!-- Dominant modality -->
+<div id="dominant-callout" class="hud">
+  <div id="dominant-name"></div>
+  <div id="dominant-desc"></div>
+</div>
+
+<!-- Left panel -->
+<div id="left-panel" class="hud">
+  <div class="panel-card" id="stats-card">
+    <div class="panel-title">AGGREGATE DATA</div>
+    <div class="stat-grid" id="stat-grid"></div>
+  </div>
+  <div class="panel-card" id="modality-card">
+    <div class="panel-title">ACTIVE MODALITIES</div>
+    <div id="modality-list"></div>
+  </div>
+</div>
+
+<!-- Right panel -->
+<div id="right-panel" class="hud">
+  <div class="panel-card">
+    <div class="panel-title">SIGNAL TRACES</div>
+    <div id="traces-container"></div>
+  </div>
+  <div class="panel-card" id="spectral-card" style="display:none">
+    <div class="panel-title">EEG SPECTRAL POWER</div>
+    <div class="spectral-row" id="spectral-bars"></div>
+    <div class="spectral-labels" id="spectral-labels"></div>
+  </div>
+</div>
+
+<!-- Correlation -->
+<div id="corr-panel" class="hud">
+  <div class="panel-card">
+    <div class="panel-title">CROSS-MODAL COUPLING</div>
+    <canvas id="corr-canvas" width="160" height="160"></canvas>
+    <div id="coupling-readout"></div>
+  </div>
+</div>
+
+<!-- Video feeds -->
+<div id="video-panel" class="hud">
+  <div class="video-feed" id="vf-eye">
+    <img id="eye-img" width="160" height="80" />
+    <div class="vlabel">IRIS / PUPIL</div>
+  </div>
+  <div class="video-feed" id="vf-webcam">
+    <img id="webcam-img" width="140" height="105" />
+    <div class="vlabel">PARTICIPANT</div>
+  </div>
+  <div class="video-feed" id="vf-pov">
+    <img id="pov-img" width="160" height="120" />
+    <div class="vlabel">POV SCENE</div>
+  </div>
+</div>
+
+<!-- Bottom bar -->
+<div id="bottom-bar" class="hud hud-interactive" style="opacity:0">
+  <div id="timeline-container">
+    <input type="range" id="timeline" min="0" max="1000" value="0" step="1" />
+    <div id="timeline-time">00:00 / 00:00</div>
+  </div>
+  <div id="session-tabs"></div>
+  <div id="controls-row">
+    <button class="ctrl-btn active" id="btn-play" onclick="setPlay(true)">▶ PLAY</button>
+    <button class="ctrl-btn" id="btn-pause" onclick="setPlay(false)">❚❚ PAUSE</button>
+    <button class="ctrl-btn" onclick="setSpeed(0.5)">0.5×</button>
+    <button class="ctrl-btn active" onclick="setSpeed(1)">1×</button>
+    <button class="ctrl-btn" onclick="setSpeed(2)">2×</button>
+    <button class="ctrl-btn active" id="btn-orbit" onclick="toggleOrbit()">ORBIT</button>
+    <button class="ctrl-btn" id="btn-cinematic" onclick="toggleCinematic()">CINEMATIC</button>
+  </div>
+</div>
+
+<!-- Three.js via classic script tags -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+<script>
+
+// ══════════════════════════════════════════════════════════════════════════
+// GLOBALS
+// ══════════════════════════════════════════════════════════════════════════
+let DATA = null;
+let currentSession = 0;
+let scene, camera, renderer, controls, composer, bloomPass;
+let clock, animTime = 0, playSpeed = 1, playing = false, autoOrbit = true, cinematic = false;
+let cinematicTime = 0;
+
+// Scene objects
+let hubMesh, hubGlow, hubLight, hubRing;
+let modNodes = {};
+let particleSystem, particlePositions, particleColors, particleAlphas, particlePhases;
+let edgeLines = {}, crossEdges = {};
+let channelMeshes = {};
+let gridGroup;
+let neuralPaths = [];
+
+const MOD_POSITIONS_3D = {};
+const R_INNER = 6;
+const R_CHANNEL = 8.5;
+const N_PARTICLES = 6000;
+
+// DOM refs
+const traceCanvases = {};
+const modBars = {};
+const TRACE_W = 180, TRACE_H = 28;
+
+// ══════════════════════════════════════════════════════════════════════════
+// LOAD DATA
+// ══════════════════════════════════════════════════════════════════════════
+fetch('neurompedia_data.json')
+  .then(r => r.json())
+  .then(d => {
+    DATA = d;
+    document.getElementById('loading').classList.add('hidden');
+    showIntro();
+  })
+  .catch(e => {
+    document.getElementById('load-text').textContent = 'ERROR: ' + e.message;
+    document.getElementById('load-text').style.color = '#f44';
+  });
+
+function showIntro() {
+  const overlay = document.getElementById('intro-overlay');
+  overlay.style.display = 'flex';
+  const s = DATA.stats;
+  document.getElementById('intro-stats').textContent =
+    `${s.totalDataGB} GB · ${s.totalXdfFiles} RECORDINGS · ${s.totalSubjects} SUBJECTS · ${s.modalitiesSeen.length} MODALITIES`;
+}
+
+window.enterExperience = function() {
+  const overlay = document.getElementById('intro-overlay');
+  overlay.classList.add('fade-out');
+  setTimeout(() => { overlay.style.display = 'none'; }, 1600);
+  init();
+  playing = true;
+  // Stagger panel reveals
+  setTimeout(() => {
+    document.getElementById('top-bar').style.opacity = '1';
+    document.getElementById('top-bar').style.transition = 'opacity 1.5s';
+  }, 500);
+  setTimeout(() => {
+    document.getElementById('bottom-bar').style.opacity = '1';
+    document.getElementById('bottom-bar').style.transition = 'opacity 1.5s';
+  }, 800);
+  setTimeout(() => {
+    document.getElementById('left-panel').classList.add('visible');
+  }, 1200);
+  setTimeout(() => {
+    document.getElementById('right-panel').classList.add('visible');
+    document.getElementById('corr-panel').classList.add('visible');
+    document.getElementById('dominant-callout').classList.add('visible');
+  }, 1600);
+  setTimeout(() => {
+    document.getElementById('video-panel').classList.add('visible');
+  }, 2000);
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// THREE.JS INIT
+// ══════════════════════════════════════════════════════════════════════════
+function init() {
+  const canvas = document.getElementById('canvas3d');
+
+  // Renderer
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0x020208);
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.0;
+
+  // Scene
+  scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x020208, 0.015);
+
+  // Camera
+  camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 300);
+  camera.position.set(0, 12, 22);
+
+  // Controls
+  controls = new THREE.OrbitControls(camera, canvas);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.04;
+  controls.minDistance = 4;
+  controls.maxDistance = 50;
+  controls.autoRotate = true;
+  controls.autoRotateSpeed = 0.25;
+  controls.target.set(0, 0, 0);
+  controls.maxPolarAngle = Math.PI * 0.85;
+
+  // Post-processing
+  composer = new THREE.EffectComposer(renderer);
+  const renderPass = new THREE.RenderPass(scene, camera);
+  composer.addPass(renderPass);
+  bloomPass = new THREE.UnrealBloomPass(
+    new THREE.Vector2(window.innerWidth, window.innerHeight),
+    1.2,   // strength
+    0.6,   // radius
+    0.15   // threshold
+  );
+  composer.addPass(bloomPass);
+
+  clock = new THREE.Clock();
+
+  // Lights
+  scene.add(new THREE.AmbientLight(0x111122, 0.3));
+  const dirLight = new THREE.DirectionalLight(0x222244, 0.2);
+  dirLight.position.set(10, 20, 10);
+  scene.add(dirLight);
+
+  // Build everything
+  buildGrid();
+  buildHub();
+  buildModNodes();
+  buildChannelNodes();
+  buildEdges();
+  buildCrossEdges();
+  buildParticleSystem();
+  buildNeuralPaths();
+  buildUI();
+  buildSessionTabs();
+
+  window.addEventListener('resize', onResize);
+
+  // Timeline scrub
+  document.getElementById('timeline').addEventListener('input', (e) => {
+    const sess = DATA.sessions[currentSession];
+    animTime = (e.target.value / 1000) * sess.duration;
+  });
+
+  animate();
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// SCENE CONSTRUCTION
+// ══════════════════════════════════════════════════════════════════════════
+
+function buildGrid() {
+  gridGroup = new THREE.Group();
+
+  // Concentric rings
+  [2.5, R_INNER, R_CHANNEL, 11, 14].forEach((r, i) => {
+    const geo = new THREE.RingGeometry(r - 0.015, r + 0.015, 128);
+    const mat = new THREE.MeshBasicMaterial({
+      color: i === 1 ? 0x1a1a44 : 0x0a0a22,
+      transparent: true, opacity: i === 1 ? 0.25 : 0.12,
+      side: THREE.DoubleSide
+    });
+    const ring = new THREE.Mesh(geo, mat);
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.y = -1;
+    gridGroup.add(ring);
+  });
+
+  // Radial lines
+  const sess = DATA.sessions[currentSession];
+  const n = Object.keys(sess.modalities).length;
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2 - Math.PI / 2;
+    const pts = [
+      new THREE.Vector3(0, -1, 0),
+      new THREE.Vector3(Math.cos(a) * 15, -1, Math.sin(a) * 15),
+    ];
+    const geo = new THREE.BufferGeometry().setFromPoints(pts);
+    const mat = new THREE.LineBasicMaterial({ color: 0x0d0d25, transparent: true, opacity: 0.15 });
+    gridGroup.add(new THREE.Line(geo, mat));
+  }
+
+  // Ground plane subtle grid
+  const planeGeo = new THREE.PlaneGeometry(60, 60);
+  const planeMat = new THREE.MeshBasicMaterial({
+    color: 0x050510, transparent: true, opacity: 0.5,
+    side: THREE.DoubleSide
+  });
+  const plane = new THREE.Mesh(planeGeo, planeMat);
+  plane.rotation.x = -Math.PI / 2;
+  plane.position.y = -1.01;
+  gridGroup.add(plane);
+
+  scene.add(gridGroup);
+}
+
+function buildHub() {
+  // Outer glow sphere
+  const glowGeo = new THREE.SphereGeometry(2.0, 48, 48);
+  const glowMat = new THREE.MeshBasicMaterial({
+    color: 0x2233aa, transparent: true, opacity: 0.04
+  });
+  hubGlow = new THREE.Mesh(glowGeo, glowMat);
+  scene.add(hubGlow);
+
+  // Core
+  const coreGeo = new THREE.IcosahedronGeometry(0.7, 2);
+  const coreMat = new THREE.MeshPhongMaterial({
+    color: 0x0a0a30, emissive: 0x2233aa, emissiveIntensity: 0.6,
+    shininess: 120, transparent: true, opacity: 0.95,
+    wireframe: false
+  });
+  hubMesh = new THREE.Mesh(coreGeo, coreMat);
+  scene.add(hubMesh);
+
+  // Wireframe overlay on hub
+  const wireGeo = new THREE.IcosahedronGeometry(0.72, 2);
+  const wireMat = new THREE.MeshBasicMaterial({
+    color: 0x3344cc, wireframe: true, transparent: true, opacity: 0.15
+  });
+  scene.add(new THREE.Mesh(wireGeo, wireMat));
+
+  // Rotating ring
+  const ringGeo = new THREE.TorusGeometry(1.2, 0.015, 8, 128);
+  const ringMat = new THREE.MeshBasicMaterial({
+    color: 0x3344cc, transparent: true, opacity: 0.2
+  });
+  hubRing = new THREE.Mesh(ringGeo, ringMat);
+  hubRing.rotation.x = Math.PI / 3;
+  scene.add(hubRing);
+
+  // Second ring
+  const ring2Geo = new THREE.TorusGeometry(1.5, 0.01, 8, 128);
+  const ring2Mat = new THREE.MeshBasicMaterial({
+    color: 0x2233aa, transparent: true, opacity: 0.1
+  });
+  const ring2 = new THREE.Mesh(ring2Geo, ring2Mat);
+  ring2.rotation.x = -Math.PI / 4;
+  ring2.rotation.z = Math.PI / 6;
+  hubRing.userData.ring2 = ring2;
+  scene.add(ring2);
+
+  // Point light
+  hubLight = new THREE.PointLight(0x3344cc, 3, 20);
+  scene.add(hubLight);
+}
+
+function buildModNodes() {
+  const sess = DATA.sessions[currentSession];
+  const names = Object.keys(sess.modalities);
+  const n = names.length;
+
+  // 3D positions: arrange in helix-like pattern
+  names.forEach((name, idx) => {
+    const angle = (idx / n) * Math.PI * 2 - Math.PI / 2;
+    const x = Math.cos(angle) * R_INNER;
+    const z = Math.sin(angle) * R_INNER;
+    // Vary Y for 3D depth
+    const y = Math.sin(angle * 1.5 + idx) * 1.5;
+
+    MOD_POSITIONS_3D[name] = { x, y, z, angle };
+
+    const mod = sess.modalities[name];
+    const color = new THREE.Color(mod.color);
+
+    // Outer glow
+    const glowGeo = new THREE.SphereGeometry(1.2, 24, 24);
+    const glowMat = new THREE.MeshBasicMaterial({
+      color, transparent: true, opacity: 0.04
+    });
+    const glow = new THREE.Mesh(glowGeo, glowMat);
+    glow.position.set(x, y, z);
+    scene.add(glow);
+
+    // Core icosahedron
+    const coreGeo = new THREE.IcosahedronGeometry(0.35, 1);
+    const coreMat = new THREE.MeshPhongMaterial({
+      color, emissive: color, emissiveIntensity: 0.3,
+      shininess: 80, transparent: true, opacity: 0.9
+    });
+    const core = new THREE.Mesh(coreGeo, coreMat);
+    core.position.set(x, y, z);
+    core.userData = { modName: name };
+    scene.add(core);
+
+    // Wireframe shell
+    const shellGeo = new THREE.IcosahedronGeometry(0.45, 1);
+    const shellMat = new THREE.MeshBasicMaterial({
+      color, wireframe: true, transparent: true, opacity: 0.08
+    });
+    const shell = new THREE.Mesh(shellGeo, shellMat);
+    shell.position.set(x, y, z);
+    scene.add(shell);
+
+    // Mini rotating ring
+    const ringGeo = new THREE.TorusGeometry(0.6, 0.008, 6, 64);
+    const ringMat = new THREE.MeshBasicMaterial({
+      color, transparent: true, opacity: 0.15
+    });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.position.set(x, y, z);
+    ring.rotation.x = Math.PI / 2 + idx * 0.3;
+    scene.add(ring);
+
+    // Point light
+    const light = new THREE.PointLight(color, 0.4, 6);
+    light.position.set(x, y, z);
+    scene.add(light);
+
+    modNodes[name] = { glow, core, shell, ring, light, color, x, y, z, angle };
+  });
+}
+
+function buildChannelNodes() {
+  const sess = DATA.sessions[currentSession];
+  const names = Object.keys(sess.modalities);
+  const n = names.length;
+
+  names.forEach((name, idx) => {
+    const mod = sess.modalities[name];
+    const nCh = Math.min(mod.nChannels, 10);
+    const baseAngle = (idx / n) * Math.PI * 2 - Math.PI / 2;
+    const spread = Math.min(0.35, Math.PI / n);
+    const meshes = [];
+    const baseY = MOD_POSITIONS_3D[name].y;
+
+    for (let c = 0; c < nCh; c++) {
+      const a = baseAngle - spread + (2 * spread * c / Math.max(nCh - 1, 1));
+      const x = Math.cos(a) * R_CHANNEL;
+      const z = Math.sin(a) * R_CHANNEL;
+      const y = baseY + (Math.random() - 0.5) * 0.8;
+
+      const geo = new THREE.SphereGeometry(0.06, 8, 8);
+      const mat = new THREE.MeshBasicMaterial({
+        color: new THREE.Color(mod.color),
+        transparent: true, opacity: 0.2
+      });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.set(x, y, z);
+      scene.add(mesh);
+      meshes.push({ mesh, angle: a, chIdx: c });
+
+      // Thin line to parent node
+      const parent = modNodes[name].core.position;
+      const lineGeo = new THREE.BufferGeometry().setFromPoints([
+        parent.clone(), new THREE.Vector3(x, y, z)
+      ]);
+      const lineMat = new THREE.LineBasicMaterial({
+        color: new THREE.Color(mod.color),
+        transparent: true, opacity: 0.04
+      });
+      scene.add(new THREE.Line(lineGeo, lineMat));
+    }
+    channelMeshes[name] = meshes;
+  });
+}
+
+function buildEdges() {
+  const sess = DATA.sessions[currentSession];
+  Object.keys(sess.modalities).forEach(name => {
+    const pos = MOD_POSITIONS_3D[name];
+    const start = new THREE.Vector3(0, 0, 0);
+    const end = new THREE.Vector3(pos.x, pos.y, pos.z);
+    const mid = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
+    mid.y += 1.0;
+
+    const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
+    const points = curve.getPoints(40);
+    const geo = new THREE.BufferGeometry().setFromPoints(points);
+    const color = new THREE.Color(sess.modalities[name].color);
+    const mat = new THREE.LineBasicMaterial({
+      color, transparent: true, opacity: 0.06
+    });
+    const line = new THREE.Line(geo, mat);
+    scene.add(line);
+    edgeLines[name] = { line, mat, curve };
+  });
+}
+
+function buildCrossEdges() {
+  const sess = DATA.sessions[currentSession];
+  const names = Object.keys(sess.modalities);
+  for (let i = 0; i < names.length; i++) {
+    for (let j = i + 1; j < names.length; j++) {
+      const m1 = names[i], m2 = names[j];
+      const p1 = new THREE.Vector3(MOD_POSITIONS_3D[m1].x, MOD_POSITIONS_3D[m1].y, MOD_POSITIONS_3D[m1].z);
+      const p2 = new THREE.Vector3(MOD_POSITIONS_3D[m2].x, MOD_POSITIONS_3D[m2].y, MOD_POSITIONS_3D[m2].z);
+      const mid = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
+      mid.y += 2.0;
+
+      const curve = new THREE.QuadraticBezierCurve3(p1, mid, p2);
+      const points = curve.getPoints(30);
+      const geo = new THREE.BufferGeometry().setFromPoints(points);
+      const c1 = new THREE.Color(sess.modalities[m1].color);
+      const c2 = new THREE.Color(sess.modalities[m2].color);
+      const avg = c1.clone().lerp(c2, 0.5);
+
+      const mat = new THREE.LineBasicMaterial({
+        color: avg, transparent: true, opacity: 0
+      });
+      const line = new THREE.Line(geo, mat);
+      scene.add(line);
+      crossEdges[`${m1}|${m2}`] = { line, mat, curve };
+    }
+  }
+}
+
+function buildParticleSystem() {
+  const sess = DATA.sessions[currentSession];
+  const modNames = Object.keys(sess.modalities);
+
+  const geometry = new THREE.BufferGeometry();
+  particlePositions = new Float32Array(N_PARTICLES * 3);
+  particleColors = new Float32Array(N_PARTICLES * 3);
+  particleAlphas = new Float32Array(N_PARTICLES);
+  particlePhases = [];
+
+  for (let i = 0; i < N_PARTICLES; i++) {
+    const modIdx = Math.floor(Math.random() * modNames.length);
+    const modName = modNames[modIdx];
+    const color = new THREE.Color(sess.modalities[modName].color);
+
+    particlePositions[i * 3] = (Math.random() - 0.5) * 0.5;
+    particlePositions[i * 3 + 1] = (Math.random() - 0.5) * 0.5;
+    particlePositions[i * 3 + 2] = (Math.random() - 0.5) * 0.5;
+
+    particleColors[i * 3] = color.r;
+    particleColors[i * 3 + 1] = color.g;
+    particleColors[i * 3 + 2] = color.b;
+
+    particleAlphas[i] = Math.random() * 0.5;
+
+    particlePhases.push({
+      modIdx, modName,
+      phase: Math.random() * Math.PI * 2,
+      speed: 0.2 + Math.random() * 0.8,
+      offset: (Math.random() - 0.5) * 1.0,
+      yOffset: (Math.random() - 0.5) * 0.8,
+      type: Math.random() < 0.7 ? 'hub' : 'cross',  // 70% hub-spoke, 30% cross-modal
+      crossTarget: modNames[Math.floor(Math.random() * modNames.length)],
+    });
+  }
+
+  geometry.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+  geometry.setAttribute('color', new THREE.BufferAttribute(particleColors, 3));
+
+  const material = new THREE.PointsMaterial({
+    size: 0.08,
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.6,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    sizeAttenuation: true,
+  });
+
+  particleSystem = new THREE.Points(geometry, material);
+  scene.add(particleSystem);
+}
+
+function buildNeuralPaths() {
+  // Ambient neural pathway arcs in the background
+  for (let i = 0; i < 30; i++) {
+    const a1 = Math.random() * Math.PI * 2;
+    const a2 = a1 + (Math.random() - 0.5) * Math.PI;
+    const r1 = 8 + Math.random() * 6;
+    const r2 = 8 + Math.random() * 6;
+    const y1 = (Math.random() - 0.5) * 4;
+    const y2 = (Math.random() - 0.5) * 4;
+
+    const p1 = new THREE.Vector3(Math.cos(a1) * r1, y1, Math.sin(a1) * r1);
+    const p2 = new THREE.Vector3(Math.cos(a2) * r2, y2, Math.sin(a2) * r2);
+    const mid = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
+    mid.y += 2 + Math.random() * 3;
+
+    const curve = new THREE.QuadraticBezierCurve3(p1, mid, p2);
+    const points = curve.getPoints(20);
+    const geo = new THREE.BufferGeometry().setFromPoints(points);
+    const mat = new THREE.LineBasicMaterial({
+      color: 0x111133, transparent: true, opacity: 0.04 + Math.random() * 0.06
+    });
+    const line = new THREE.Line(geo, mat);
+    scene.add(line);
+    neuralPaths.push({ line, mat, baseOpacity: mat.opacity });
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// UI CONSTRUCTION
+// ══════════════════════════════════════════════════════════════════════════
+function buildUI() {
+  const stats = DATA.stats;
+
+  // Stats card
+  const grid = document.getElementById('stat-grid');
+  const statItems = [
+    { value: stats.totalDataGB, label: 'GB DATA' },
+    { value: stats.totalXdfFiles, label: 'RECORDINGS' },
+    { value: stats.totalSubjects, label: 'SUBJECTS' },
+    { value: stats.modalitiesSeen.length, label: 'MODALITIES' },
+  ];
+  grid.innerHTML = statItems.map(s => `
+    <div class="stat-item">
+      <div class="stat-value">${s.value}</div>
+      <div class="stat-label">${s.label}</div>
+    </div>
+  `).join('');
+
+  // Build for current session
+  rebuildSessionUI();
+}
+
+function rebuildSessionUI() {
+  const sess = DATA.sessions[currentSession];
+  const modNames = Object.keys(sess.modalities);
+
+  // Session info
+  document.getElementById('session-info').textContent =
+    `${sess.info.basename} · ${sess.streams.length} STREAMS · ${sess.duration.toFixed(0)}s`;
+
+  // Modality list
+  const modList = document.getElementById('modality-list');
+  modList.innerHTML = modNames.map(name => {
+    const m = sess.modalities[name];
+    return `
+      <div class="mod-row">
+        <div class="mod-dot" style="background:${m.color}"></div>
+        <div class="mod-name">${name}</div>
+        <div class="mod-channels">${m.nChannels}ch</div>
+        <div class="mod-bar-container">
+          <div class="mod-bar-fill" id="mbar-${name.replace(/[^a-zA-Z]/g,'')}" style="background:${m.color};width:50%"></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Traces
+  const container = document.getElementById('traces-container');
+  container.innerHTML = '';
+  Object.keys(traceCanvases).forEach(k => delete traceCanvases[k]);
+
+  modNames.forEach(name => {
+    const m = sess.modalities[name];
+    const row = document.createElement('div');
+    row.className = 'trace-row';
+
+    const label = document.createElement('div');
+    label.className = 'trace-label';
+    label.style.color = m.color;
+    label.textContent = name.length > 9 ? name.slice(0, 9) : name;
+
+    const canvas = document.createElement('canvas');
+    canvas.className = 'trace-canvas';
+    canvas.width = TRACE_W;
+    canvas.height = TRACE_H;
+
+    const val = document.createElement('div');
+    val.className = 'trace-value';
+    val.id = `tv-${name.replace(/[^a-zA-Z]/g,'')}`;
+
+    row.appendChild(label);
+    row.appendChild(canvas);
+    row.appendChild(val);
+    container.appendChild(row);
+
+    traceCanvases[name] = { canvas, ctx: canvas.getContext('2d'), history: [] };
+  });
+
+  // Spectral panel (show only if EEG data with spectral)
+  const spectralCard = document.getElementById('spectral-card');
+  if (sess.modalities['EEG'] && sess.modalities['EEG'].spectral) {
+    spectralCard.style.display = 'block';
+    const bands = ['delta', 'theta', 'alpha', 'beta', 'gamma'];
+    const bandColors = ['#4444cc', '#6644cc', '#8844cc', '#aa44cc', '#cc44cc'];
+    document.getElementById('spectral-bars').innerHTML = bands.map((b, i) =>
+      `<div class="spectral-bar" id="sbar-${b}" style="background:${bandColors[i]};height:2px"></div>`
+    ).join('');
+    document.getElementById('spectral-labels').innerHTML = bands.map(b =>
+      `<div class="spectral-lbl">${b[0].toUpperCase()}</div>`
+    ).join('');
+  } else {
+    spectralCard.style.display = 'none';
+  }
+
+  // Video panels
+  const vp = document.getElementById('video-panel');
+  const hasVideo = DATA.videoFrames && Object.keys(DATA.videoFrames).length > 0;
+  vp.style.display = hasVideo ? 'flex' : 'none';
+
+  // Timeline range
+  document.getElementById('timeline').max = 1000;
+  animTime = 0;
+}
+
+function buildSessionTabs() {
+  const tabs = document.getElementById('session-tabs');
+  tabs.innerHTML = DATA.sessions.map((s, i) => {
+    const name = s.info.subject || 'session';
+    const size = s.info.size_mb;
+    return `<div class="session-tab ${i === currentSession ? 'active' : ''}" onclick="window.switchSession(${i})">
+      ${name}<span class="session-size">${size}MB</span>
+    </div>`;
+  }).join('');
+}
+
+window.switchSession = function(idx) {
+  if (idx === currentSession || idx >= DATA.sessions.length) return;
+  currentSession = idx;
+  animTime = 0;
+
+  // Clear trace histories
+  Object.values(traceCanvases).forEach(tc => tc.history = []);
+
+  rebuildSessionUI();
+  buildSessionTabs();
+
+  // Update modality node positions and colors
+  // (In a full version we'd rebuild the scene, but for perf we just update UI)
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// ANIMATION
+// ══════════════════════════════════════════════════════════════════════════
+function animate() {
+  requestAnimationFrame(animate);
+
+  const delta = clock.getDelta();
+  const realTime = clock.getElapsedTime();
+
+  if (playing) {
+    const sess = DATA.sessions[currentSession];
+    animTime += delta * playSpeed;
+    if (animTime >= sess.duration) animTime = 0;
+  }
+
+  // Cinematic camera
+  if (cinematic) {
+    cinematicTime += delta * 0.15;
+    const ct = cinematicTime;
+    // Smooth camera path
+    const cx = Math.sin(ct * 0.7) * 14 + Math.cos(ct * 0.3) * 4;
+    const cy = 6 + Math.sin(ct * 0.4) * 5;
+    const cz = Math.cos(ct * 0.5) * 14 + Math.sin(ct * 0.8) * 4;
+    camera.position.lerp(new THREE.Vector3(cx, cy, cz), 0.02);
+    controls.target.lerp(new THREE.Vector3(0, Math.sin(ct * 0.2) * 1.5, 0), 0.01);
+    controls.autoRotate = false;
+  } else {
+    controls.autoRotate = autoOrbit;
+  }
+  controls.update();
+
+  updateScene(animTime, realTime);
+  composer.render();
+}
+
+function updateScene(t, realTime) {
+  const sess = DATA.sessions[currentSession];
+  if (!sess) return;
+
+  const modNames = Object.keys(sess.modalities);
+  const idx = Math.min(Math.floor(t * sess.sampleRate), sess.nSamples - 1);
+
+  // Time display
+  document.getElementById('elapsed').textContent = t.toFixed(1).padStart(5, '0');
+  const tMins = Math.floor(t / 60), tSecs = Math.floor(t % 60);
+  const dMins = Math.floor(sess.duration / 60), dSecs = Math.floor(sess.duration % 60);
+  document.getElementById('timeline-time').textContent =
+    `${String(tMins).padStart(2,'0')}:${String(tSecs).padStart(2,'0')} / ${String(dMins).padStart(2,'0')}:${String(dSecs).padStart(2,'0')}`;
+  document.getElementById('timeline').value = Math.floor((t / sess.duration) * 1000);
+
+  // Get activations
+  const acts = {};
+  let maxAct = 0, maxMod = modNames[0];
+  modNames.forEach(name => {
+    const v = sess.modalities[name].mean[idx] || 0.5;
+    acts[name] = v;
+    if (v > maxAct) { maxAct = v; maxMod = name; }
+  });
+
+  // Dominant callout
+  document.getElementById('dominant-name').style.color = sess.modalities[maxMod].color;
+  document.getElementById('dominant-name').textContent = maxMod;
+  document.getElementById('dominant-desc').textContent = sess.modalities[maxMod].desc;
+
+  // ── Hub animation ──
+  const totalAct = modNames.reduce((s, n) => s + acts[n], 0) / modNames.length;
+  const hubPulse = 0.05 * Math.sin(realTime * 1.5);
+  hubMesh.rotation.y = realTime * 0.1;
+  hubMesh.rotation.x = Math.sin(realTime * 0.07) * 0.2;
+  hubMesh.scale.setScalar(1 + 0.2 * totalAct + hubPulse);
+  hubMesh.material.emissiveIntensity = 0.3 + 0.7 * totalAct;
+  hubGlow.scale.setScalar(1.5 + 2 * totalAct);
+  hubGlow.material.opacity = 0.02 + 0.1 * totalAct;
+  hubLight.intensity = 1.5 + 5 * totalAct;
+  hubRing.rotation.z = realTime * 0.3;
+  hubRing.material.opacity = 0.1 + 0.2 * totalAct;
+  if (hubRing.userData.ring2) {
+    hubRing.userData.ring2.rotation.y = -realTime * 0.2;
+    hubRing.userData.ring2.rotation.z = realTime * 0.15;
+  }
+
+  // ── Modality nodes ──
+  modNames.forEach(name => {
+    if (!modNodes[name]) return;
+    const node = modNodes[name];
+    const act = acts[name];
+    const pulse = 0.06 * Math.sin(realTime * 2 + node.angle * 3);
+
+    const s = 0.8 + 0.5 * act + pulse;
+    node.core.scale.setScalar(s);
+    node.core.rotation.y = realTime * 0.2 + node.angle;
+    node.core.material.emissiveIntensity = 0.2 + 0.8 * act;
+    node.shell.scale.setScalar(s * 1.3);
+    node.shell.material.opacity = 0.03 + 0.15 * act;
+    node.glow.scale.setScalar(0.8 + 2 * act);
+    node.glow.material.opacity = 0.02 + 0.15 * act;
+    node.ring.rotation.z = realTime * (0.3 + act * 0.5);
+    node.ring.material.opacity = 0.05 + 0.2 * act;
+    node.light.intensity = 0.2 + 2.5 * act;
+
+    // Hub edge brightness
+    if (edgeLines[name]) {
+      edgeLines[name].mat.opacity = 0.03 + 0.3 * act;
+    }
+
+    // Modality bar in left panel
+    const barEl = document.getElementById(`mbar-${name.replace(/[^a-zA-Z]/g,'')}`);
+    if (barEl) barEl.style.width = (act * 100) + '%';
+  });
+
+  // ── Cross-modal edges ──
+  const corrData = sess.correlations[idx] || {};
+  const couplings = [];
+  for (const key in crossEdges) {
+    const corr = corrData[key] || 0;
+    crossEdges[key].mat.opacity = corr > 0.15 ? corr * 0.4 : 0;
+    const [m1, m2] = key.split('|');
+    if (corr > 0.15) couplings.push({ m1, m2, corr });
+  }
+  couplings.sort((a, b) => b.corr - a.corr);
+
+  // Coupling readout
+  document.getElementById('coupling-readout').innerHTML = couplings.slice(0, 4).map(c => {
+    const cls = c.corr > 0.35 ? 'coupling-line strong' : 'coupling-line';
+    return `<div class="${cls}">${c.m1} ↔ ${c.m2} ${c.corr.toFixed(2)}</div>`;
+  }).join('');
+
+  // ── Channel nodes ──
+  modNames.forEach(name => {
+    const channels = sess.modalities[name].channels;
+    const meshes = channelMeshes[name];
+    if (!meshes || !channels) return;
+    meshes.forEach(({ mesh, chIdx }) => {
+      if (channels[idx] && chIdx < channels[idx].length) {
+        const v = channels[idx][chIdx];
+        mesh.material.opacity = 0.05 + 0.6 * v;
+        mesh.scale.setScalar(0.4 + 2.5 * v);
+      }
+    });
+  });
+
+  // ── Particles ──
+  const positions = particleSystem.geometry.attributes.position.array;
+  const colors = particleSystem.geometry.attributes.color.array;
+
+  for (let i = 0; i < N_PARTICLES; i++) {
+    const p = particlePhases[i];
+    const act = acts[p.modName] || 0.5;
+    const pos = MOD_POSITIONS_3D[p.modName];
+    if (!pos) continue;
+
+    p.phase += (0.015 + 0.025 * act) * p.speed * playSpeed;
+
+    if (p.type === 'hub') {
+      // Hub ↔ modality flow
+      const interp = 0.5 + 0.5 * Math.sin(p.phase);
+      const tx = pos.x * interp;
+      const tz = pos.z * interp;
+      const ty = pos.y * interp;
+
+      const spiralAngle = p.phase * 2 + p.offset * 4;
+      const spiralR = p.offset * (1 - Math.abs(interp - 0.5) * 2) * 0.8;
+
+      positions[i * 3] = tx + Math.cos(spiralAngle) * spiralR;
+      positions[i * 3 + 1] = ty + p.yOffset * (1 - Math.abs(interp - 0.5) * 2) + Math.sin(p.phase * 0.7) * 0.2;
+      positions[i * 3 + 2] = tz + Math.sin(spiralAngle) * spiralR;
+    } else {
+      // Cross-modal flow
+      const targetPos = MOD_POSITIONS_3D[p.crossTarget];
+      if (!targetPos) continue;
+      const interp = 0.5 + 0.5 * Math.sin(p.phase * 0.7);
+      positions[i * 3] = pos.x + (targetPos.x - pos.x) * interp + Math.sin(p.phase * 2) * p.offset * 0.5;
+      positions[i * 3 + 1] = pos.y + (targetPos.y - pos.y) * interp + Math.abs(Math.sin(p.phase)) * 2 * (1 - Math.abs(interp - 0.5) * 2);
+      positions[i * 3 + 2] = pos.z + (targetPos.z - pos.z) * interp + Math.cos(p.phase * 2) * p.offset * 0.5;
+    }
+
+    // Occasionally reassign
+    if (Math.random() < 0.001) {
+      p.modIdx = Math.floor(Math.random() * modNames.length);
+      p.modName = modNames[p.modIdx];
+      p.crossTarget = modNames[Math.floor(Math.random() * modNames.length)];
+      const color = new THREE.Color(sess.modalities[p.modName].color);
+      colors[i * 3] = color.r;
+      colors[i * 3 + 1] = color.g;
+      colors[i * 3 + 2] = color.b;
+    }
+  }
+  particleSystem.geometry.attributes.position.needsUpdate = true;
+  particleSystem.geometry.attributes.color.needsUpdate = true;
+
+  // ── Neural paths ambient pulse ──
+  neuralPaths.forEach((np, i) => {
+    np.mat.opacity = np.baseOpacity * (0.6 + 0.4 * Math.sin(realTime * 0.3 + i * 0.7));
+  });
+
+  // ── Video frames ──
+  if (DATA.videoFrames) {
+    const frameIdx = Math.min(Math.floor(t / 3), 39);
+    updateVideoFeed('eye-img', DATA.videoFrames.eye, frameIdx);
+    updateVideoFeed('webcam-img', DATA.videoFrames.webcam, frameIdx);
+    updateVideoFeed('pov-img', DATA.videoFrames.pov, frameIdx);
+  }
+
+  // ── Signal traces ──
+  modNames.forEach(name => {
+    const tc = traceCanvases[name];
+    if (!tc) return;
+    const val = acts[name];
+    tc.history.push(val);
+    if (tc.history.length > TRACE_W) tc.history.shift();
+
+    const ctx = tc.ctx;
+    ctx.clearRect(0, 0, TRACE_W, TRACE_H);
+
+    // Gradient fill under trace
+    const color = sess.modalities[name].color;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.2;
+    ctx.globalAlpha = 0.7;
+    ctx.beginPath();
+    tc.history.forEach((v, i) => {
+      const x = (i / TRACE_W) * TRACE_W;
+      const y = TRACE_H - v * TRACE_H;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // Fill
+    ctx.globalAlpha = 0.08;
+    ctx.lineTo(TRACE_W, TRACE_H);
+    ctx.lineTo(0, TRACE_H);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    // Value readout
+    const valEl = document.getElementById(`tv-${name.replace(/[^a-zA-Z]/g,'')}`);
+    if (valEl) valEl.textContent = val.toFixed(2);
+  });
+
+  // ── EEG Spectral bars ──
+  const eeg = sess.modalities['EEG'];
+  if (eeg && eeg.spectral && eeg.spectral.length > 0) {
+    const specIdx = Math.min(Math.floor((idx / sess.nSamples) * eeg.spectral.length), eeg.spectral.length - 1);
+    const spec = eeg.spectral[specIdx];
+    const bands = ['delta', 'theta', 'alpha', 'beta', 'gamma'];
+    const maxPow = Math.max(...bands.map(b => spec[b] || 0), 0.001);
+    bands.forEach(b => {
+      const el = document.getElementById(`sbar-${b}`);
+      if (el) {
+        const pct = Math.min(((spec[b] || 0) / maxPow) * 100, 100);
+        el.style.height = Math.max(2, pct * 0.48) + 'px';
+      }
+    });
+  }
+
+  // ── Correlation matrix ──
+  updateCorrMatrix(idx, modNames, sess);
+}
+
+function updateVideoFeed(imgId, frames, frameIdx) {
+  if (!frames || !frames[frameIdx]) return;
+  const img = document.getElementById(imgId);
+  if (img) img.src = 'data:image/jpeg;base64,' + frames[frameIdx];
+}
+
+function updateCorrMatrix(idx, modNames, sess) {
+  const canvas = document.getElementById('corr-canvas');
+  const ctx = canvas.getContext('2d');
+  const n = modNames.length;
+  if (n === 0) return;
+  const cellSize = Math.floor(160 / n);
+  const corrData = sess.correlations[idx] || {};
+
+  ctx.clearRect(0, 0, 160, 160);
+
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < n; j++) {
+      let val = 0;
+      if (i === j) val = 1;
+      else {
+        const key = i < j ? `${modNames[i]}|${modNames[j]}` : `${modNames[j]}|${modNames[i]}`;
+        val = corrData[key] || 0;
+      }
+      // Custom colormap: deep blue → cyan → white
+      const r = Math.min(255, Math.floor(val * val * 200));
+      const g = Math.min(255, Math.floor(val * 120));
+      const b = Math.min(255, Math.floor(20 + val * 200));
+      ctx.fillStyle = `rgb(${r},${g},${b})`;
+      ctx.fillRect(j * cellSize, i * cellSize, cellSize - 1, cellSize - 1);
+    }
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// CONTROLS
+// ══════════════════════════════════════════════════════════════════════════
+window.setPlay = function(p) {
+  playing = p;
+  document.getElementById('btn-play').classList.toggle('active', p);
+  document.getElementById('btn-pause').classList.toggle('active', !p);
+};
+
+window.setSpeed = function(s) {
+  playSpeed = s;
+  playing = true;
+  document.querySelectorAll('#controls-row .ctrl-btn').forEach(b => {
+    if (b.textContent.includes('×')) b.classList.remove('active');
+  });
+  document.querySelectorAll('#controls-row .ctrl-btn').forEach(b => {
+    if (b.textContent.trim() === s + '×') b.classList.add('active');
+  });
+};
+
+window.toggleOrbit = function() {
+  autoOrbit = !autoOrbit;
+  cinematic = false;
+  document.getElementById('btn-orbit').classList.toggle('active', autoOrbit);
+  document.getElementById('btn-cinematic').classList.remove('active');
+};
+
+window.toggleCinematic = function() {
+  cinematic = !cinematic;
+  if (cinematic) {
+    autoOrbit = false;
+    cinematicTime = 0;
+  }
+  document.getElementById('btn-cinematic').classList.toggle('active', cinematic);
+  document.getElementById('btn-orbit').classList.toggle('active', autoOrbit);
+};
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+  if (e.code === 'Space') { e.preventDefault(); window.setPlay(!playing); }
+  if (e.code === 'KeyC') window.toggleCinematic();
+  if (e.code === 'KeyO') window.toggleOrbit();
+  if (e.code === 'ArrowRight') { animTime += 5; }
+  if (e.code === 'ArrowLeft') { animTime = Math.max(0, animTime - 5); }
+  if (e.code === 'Digit1') window.setSpeed(0.5);
+  if (e.code === 'Digit2') window.setSpeed(1);
+  if (e.code === 'Digit3') window.setSpeed(2);
+  // Session switching with [ and ]
+  if (e.code === 'BracketLeft') window.switchSession(Math.max(0, currentSession - 1));
+  if (e.code === 'BracketRight') window.switchSession(Math.min(DATA.sessions.length - 1, currentSession + 1));
+});
+
+function onResize() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  composer.setSize(window.innerWidth, window.innerHeight);
+}
+</script>
+</body>
+</html>
