@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Functional Brain Emulation — Data Overview</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap');
+
+  :root {
+    --bg: #050508;
+    --card: rgba(8,8,18,0.9);
+    --border: rgba(50,50,100,0.2);
+    --border-hi: rgba(80,80,180,0.3);
+    --text1: #ccd;
+    --text2: #778;
+    --text3: #445;
+    --accent: #4455cc;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text1);
+    font-family: 'Inter', -apple-system, sans-serif;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ── Animated background ───────────────────────────── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0;
+    background:
+      radial-gradient(ellipse 800px 600px at 20% 30%, rgba(30,30,100,0.08), transparent),
+      radial-gradient(ellipse 600px 800px at 80% 70%, rgba(60,20,80,0.06), transparent);
+    pointer-events: none;
+  }
+
+  .container {
+    position: relative; z-index: 1;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 60px 40px 100px;
+  }
+
+  /* ── Header ────────────────────────────────────────── */
+  .header {
+    text-align: center;
+    margin-bottom: 80px;
+    padding-top: 40px;
+  }
+  .header-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 6px; color: var(--text3);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+  .header h1 {
+    font-size: 48px; font-weight: 200; letter-spacing: 12px;
+    color: #fff;
+    margin-bottom: 16px;
+  }
+  .header h1 span { color: var(--accent); font-weight: 300; }
+  .header-sub {
+    font-size: 13px; letter-spacing: 4px; color: var(--text3);
+    font-weight: 300;
+  }
+  .header-line {
+    width: 60px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    margin: 30px auto 0;
+  }
+
+  /* ── Stats banner ──────────────────────────────────── */
+  .stats-banner {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 80px;
+  }
+  .stat-cell {
+    background: var(--card);
+    padding: 28px 16px;
+    text-align: center;
+  }
+  .stat-number {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 36px; font-weight: 300;
+    color: #fff;
+    line-height: 1;
+  }
+  .stat-number .unit {
+    font-size: 16px; color: var(--text3);
+    font-weight: 400;
+  }
+  .stat-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px; letter-spacing: 3px;
+    color: var(--text3);
+    margin-top: 8px;
+    text-transform: uppercase;
+  }
+
+  /* ── Section titles ────────────────────────────────── */
+  .section-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 5px;
+    color: var(--text3);
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .section-title::after {
+    content: '';
+    flex: 1; height: 1px;
+    background: var(--border);
+  }
+
+  /* ── Device cards ──────────────────────────────────── */
+  .devices-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 80px;
+  }
+  .device-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+  .device-card:hover {
+    border-color: var(--border-hi);
+    box-shadow: 0 0 40px rgba(60,60,150,0.05);
+  }
+  .device-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--device-color);
+    opacity: 0.6;
+  }
+  .device-header {
+    display: flex; justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+  }
+  .device-name {
+    font-size: 15px; font-weight: 500;
+    letter-spacing: 1px;
+  }
+  .device-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px; letter-spacing: 2px;
+    color: var(--device-color);
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--device-color);
+    border-radius: 4px;
+    padding: 3px 8px;
+    opacity: 0.6;
+  }
+  .device-desc {
+    font-size: 11px; color: var(--text2);
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+  .device-specs {
+    display: flex; flex-wrap: wrap; gap: 12px;
+  }
+  .spec {
+    display: flex; flex-direction: column;
+    background: rgba(255,255,255,0.02);
+    border-radius: 6px;
+    padding: 8px 12px;
+    min-width: 80px;
+  }
+  .spec-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px; font-weight: 500;
+    color: var(--device-color);
+  }
+  .spec-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 7px; letter-spacing: 1.5px;
+    color: var(--text3);
+    margin-top: 2px;
+    text-transform: uppercase;
+  }
+
+  /* ── LSL Stream table ──────────────────────────────── */
+  .stream-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-bottom: 80px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .stream-table th {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px; letter-spacing: 2px;
+    color: var(--text3);
+    text-transform: uppercase;
+    padding: 14px 16px;
+    text-align: left;
+    background: rgba(10,10,25,0.8);
+    border-bottom: 1px solid var(--border);
+  }
+  .stream-table td {
+    font-size: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(30,30,60,0.15);
+    color: var(--text2);
+  }
+  .stream-table tr:last-child td { border-bottom: none; }
+  .stream-table tr:hover td { background: rgba(40,40,80,0.08); }
+  .stream-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 500; color: var(--text1);
+    font-size: 11px;
+  }
+  .stream-dot {
+    display: inline-block;
+    width: 6px; height: 6px; border-radius: 50%;
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+  .stream-rate {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+  }
+
+  /* ── Architecture diagram ──────────────────────────── */
+  .architecture {
+    margin-bottom: 80px;
+  }
+  .arch-flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    padding: 40px 0;
+  }
+  .arch-col {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 8px;
+  }
+  .arch-node {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    color: var(--text2);
+    text-align: center;
+    min-width: 120px;
+    transition: border-color 0.3s;
+  }
+  .arch-node:hover { border-color: var(--border-hi); }
+  .arch-node .node-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 7px; letter-spacing: 2px;
+    color: var(--text3);
+    display: block;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+  }
+  .arch-arrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 20px;
+    color: var(--text3);
+    padding: 0 20px;
+    opacity: 0.3;
+  }
+  .arch-col-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px; letter-spacing: 3px;
+    color: var(--text3);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+  }
+
+  /* ── Sessions / Subjects ───────────────────────────── */
+  .sessions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 12px;
+    margin-bottom: 80px;
+  }
+  .session-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px;
+  }
+  .session-card-header {
+    display: flex; justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .session-card-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; font-weight: 500;
+    color: var(--text1);
+  }
+  .session-card-size {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--text3);
+  }
+  .session-card-meta {
+    font-size: 10px; color: var(--text3);
+    line-height: 1.8;
+  }
+  .session-bar {
+    height: 3px;
+    background: rgba(30,30,60,0.3);
+    border-radius: 2px;
+    margin-top: 10px;
+    overflow: hidden;
+  }
+  .session-bar-fill {
+    height: 100%; border-radius: 2px;
+    background: linear-gradient(90deg, var(--accent), #7744cc);
+  }
+
+  /* ── Modality breakdown ────────────────────────────── */
+  .modality-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 80px;
+  }
+  .mod-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .mod-card::after {
+    content: '';
+    position: absolute; bottom: 0; left: 20%; right: 20%;
+    height: 1px;
+    background: var(--mod-color);
+    opacity: 0.3;
+  }
+  .mod-icon {
+    font-size: 28px;
+    margin-bottom: 10px;
+    opacity: 0.7;
+  }
+  .mod-name {
+    font-size: 12px; font-weight: 500;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+  .mod-detail {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; color: var(--text3);
+    letter-spacing: 1px;
+  }
+
+  /* ── Footer ────────────────────────────────────────── */
+  .footer {
+    text-align: center;
+    padding: 60px 0 20px;
+    border-top: 1px solid var(--border);
+  }
+  .footer-text {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 3px;
+    color: var(--text3);
+  }
+
+  /* ── Responsive ────────────────────────────────────── */
+  @media (max-width: 900px) {
+    .stats-banner { grid-template-columns: repeat(3, 1fr); }
+    .devices-grid { grid-template-columns: 1fr; }
+    .modality-grid { grid-template-columns: repeat(2, 1fr); }
+    .arch-flow { flex-direction: column; }
+    .arch-arrow { transform: rotate(90deg); padding: 10px 0; }
+    .header h1 { font-size: 28px; letter-spacing: 6px; }
+  }
+  @media (max-width: 600px) {
+    .stats-banner { grid-template-columns: repeat(2, 1fr); }
+    .container { padding: 30px 20px 60px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-label">Netholabs Research</div>
+    <h1>FUNCTIONAL BRAIN<br><span>EMULATION</span></h1>
+    <div class="header-sub">MULTI-MODAL NEURAL RECORDING DATA OVERVIEW</div>
+    <div class="header-line"></div>
+  </div>
+
+  <!-- Stats banner -->
+  <div class="stats-banner">
+    <div class="stat-cell">
+      <div class="stat-number">67<span class="unit"> GB</span></div>
+      <div class="stat-label">Total Data</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-number">42</div>
+      <div class="stat-label">Recordings</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-number">9</div>
+      <div class="stat-label">Subjects</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-number">11</div>
+      <div class="stat-label">Modalities</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-number">200<span class="unit">+</span></div>
+      <div class="stat-label">Channels</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-number">10</div>
+      <div class="stat-label">Devices</div>
+    </div>
+  </div>
+
+  <!-- Devices -->
+  <div class="section-title">Recording Devices</div>
+  <div class="devices-grid">
+
+    <div class="device-card" style="--device-color: #7C4DFF">
+      <div class="device-header">
+        <div class="device-name">DSI-24</div>
+        <div class="device-badge">EEG</div>
+      </div>
+      <div class="device-desc">Wearable Sensing dry-electrode EEG headset. Wireless Bluetooth streaming for mobile recordings. Full 10-20 montage coverage.</div>
+      <div class="device-specs">
+        <div class="spec"><div class="spec-value">24</div><div class="spec-label">Channels</div></div>
+        <div class="spec"><div class="spec-value">300 Hz</div><div class="spec-label">Sample Rate</div></div>
+        <div class="spec"><div class="spec-value">BT</div><div class="spec-label">Interface</div></div>
+        <div class="spec"><div class="spec-value">COM3</div><div class="spec-label">Port</div></div>
+      </div>
+    </div>
+
+    <div class="device-card" style="--device-color: #FF1744">
+      <div class="device-header">
+        <div class="device-name">Kernel Flow 2</div>
+        <div class="device-badge">fNIRS</div>
+      </div>
+      <div class="device-desc">TD-fNIRS helmet with 48 optical modules. Dual-wavelength (690nm Red + 850nm IR) hemoglobin measurement plus real-time signal quality tracking.</div>
+      <div class="device-specs">
+        <div class="spec"><div class="spec-value">48</div><div class="spec-label">Modules</div></div>
+        <div class="spec"><div class="spec-value">5 Hz</div><div class="spec-label">Sample Rate</div></div>
+        <div class="spec"><div class="spec-value">3</div><div class="spec-label">LSL Streams</div></div>
+        <div class="spec"><div class="spec-value">WS</div><div class="spec-label">Kortex SDK</div></div>
+      </div>
+    </div>
+
+    <div class="device-card" style="--device-color: #00E5FF">
+      <div class="device-header">
+        <div class="device-name">Gazepoint GP3</div>
+        <div class="device-badge">EYE TRACKING</div>
+      </div>
+      <div class="device-desc">Desktop eye tracker for lab-based recordings. Fixation position, pupil diameter, and validity tracking via TCP/XML protocol.</div>
+      <div class="device-specs">
+        <div class="spec"><div class="spec-value">6</div><div class="spec-label">Channels</div></div>
+        <div class="spec"><div class="spec-value">60 Hz</div><div class="spec-label">Sample Rate</div></div>
+        <div class="spec"><div class="spec-value">TCP</div><div class="spec-label">Interface</div></div>
+        <div class="spec"><div class="spec-value">4242</div><div class="spec-label">Port</div></div>
+      </div>
+    </div>
+
+    <div class="device-card" style="--device-color: #00BCD4">
+      <div class="device-header">
+        <div class="device-name">Tobii Pro Glasses 3</div>
+        <div class="device-badge">MOBILE GAZE + IMU</div>
+      </div>
+      <div class="device-desc">Wearable eye-tracking glasses for mobile recordings. Binocular gaze, pupil diameter, and 9-axis IMU (accelerometer, gyroscope, magnetometer).</div>
+      <div class="device-specs">
+        <div class="spec"><div class="spec-value">10</div><div class="spec-label">Gaze Ch</div></div>
+        <div class="spec"><div class="spec-value">50 Hz</div><div class="spec-label">Gaze Rate</div></div>
+        <div class="spec"><div class="spec-value">9</div><div class="spec-label">IMU Ch</div></div>
+        <div class="spec"><div class="spec-value">100 Hz</div><div class="spec-label">IMU Rate</div></div>
+      </div>
+    </div>
+
+    <div class="device-card" style="--device-color: #2196F3">
+      <div class="device-header">
+        <div class="device-name">Pupil Labs Neon</div>
+        <div class="device-badge">MOBILE GAZE + IMU</div>
+      </div>
+      <div class="device-desc">Next-gen wearable eye tracker with scene camera. High-rate binocular gaze, 3D eye position, blinks, fixation detection, and onboard IMU.</div>
+      <div class="device-specs">
+        <div class="spec"><div class="spec-value">17</div><div class="spec-label">Gaze Ch</div></div>
+        <div class="spec"><div class="spec-value">200 Hz</div><div class="spec-label">Gaze Rate</div></div>
+        <div class="spec"><div class="spec-value">10</div><div class="spec-label">IMU Ch</div></div>
+        <div class="spec"><div class="spec-value">110 Hz</div><div class="spec-label">IMU Rate</div></div>
+      </div>
+    </div>
+
+    <div class="device-card" style="--device-color: #F50057">
+      <div class="device-header">
+        <div class="device-name">Delsys Trigno</div>
+        <div class="device-badge">EMG</div>
+      </div>
+      <div class="device-desc">Wireless surface EMG system with auxiliary analog sensors. 16 muscle channels plus 48 accelerometer/auxiliary inputs via TCP SDK.</div>
+      <div class="device-specs">
+        <div class="spec"><div class="spec-value">16</div><div class="spec-label">EMG Ch</div></div>
+        <div class="spec"><div class="spec-value">2000 Hz</div><div class="spec-label">EMG Rate</div></div>
+        <div class="spec"><div class="spec-value">48</div><div class="spec-label">AUX Ch</div></div>
+        <div class="spec"><div class="spec-value">148 Hz</div><div class="spec-label">AUX Rate</div></div>
+      </div>
+    </div>
+
+    <div class="device-card" style="--device-color: #76FF03">
+      <div class="device-header">
+        <div class="device-name">StretchSense</div>
+        <div class="device-badge">HAND / BODY</div>
+      </div>
+      <div class="device-desc">Capacitive stretch sensor gloves and body suit. Full finger-level kinematics for both hands plus upper-body motion capture.</div>
+      <div class="device-specs">
+        <div class="spec"><div class="spec-value">56</div><div class="spec-label">Hand Ch</div></div>
+        <div class="spec"><div class="spec-value">112</div><div class="spec-label">Body Ch</div></div>
+        <div class="spec"><div class="spec-value">224</div><div class="spec-label">Total Ch</div></div>
+        <div class="spec"><div class="spec-value">BLE</div><div class="spec-label">Interface</div></div>
+      </div>
+    </div>
+
+    <div class="device-card" style="--device-color: #448AFF">
+      <div class="device-header">
+        <div class="device-name">Audio / Video Capture</div>
+        <div class="device-badge">A/V</div>
+      </div>
+      <div class="device-desc">Microphone audio stream, USB webcam (participant face), Pupil Neon scene camera (POV + iris), and two Raspberry Pi camera streams.</div>
+      <div class="device-specs">
+        <div class="spec"><div class="spec-value">1</div><div class="spec-label">Audio Ch</div></div>
+        <div class="spec"><div class="spec-value">3</div><div class="spec-label">Video Feeds</div></div>
+        <div class="spec"><div class="spec-value">2</div><div class="spec-label">Pi Cameras</div></div>
+        <div class="spec"><div class="spec-value">30 fps</div><div class="spec-label">Frame Rate</div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- LSL Stream table -->
+  <div class="section-title">LSL Stream Architecture</div>
+  <table class="stream-table">
+    <thead>
+      <tr>
+        <th>Stream Name</th>
+        <th>Source Device</th>
+        <th>Channels</th>
+        <th>Sample Rate</th>
+        <th>Signal Type</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="stream-dot" style="background:#7C4DFF"></span><span class="stream-name">DSI24</span></td>
+        <td>Wearable Sensing DSI-24</td>
+        <td>24</td>
+        <td><span class="stream-rate">300 Hz</span></td>
+        <td>EEG (10-20 montage)</td>
+      </tr>
+      <tr>
+        <td><span class="stream-dot" style="background:#FF1744"></span><span class="stream-name">KernelFlow_Red</span></td>
+        <td>Kernel Flow 2</td>
+        <td>48</td>
+        <td><span class="stream-rate">5 Hz</span></td>
+        <td>fNIRS Oxygenation (690nm)</td>
+      </tr>
+      <tr>
+        <td><span class="stream-dot" style="background:#E040FB"></span><span class="stream-name">KernelFlow_IR</span></td>
+        <td>Kernel Flow 2</td>
+        <td>48</td>
+        <td><span class="stream-rate">5 Hz</span></td>
+        <td>fNIRS Deoxygenation (850nm)</td>
+      </tr>
+      <tr>
+        <td><span class="stream-dot" style="background:#FF9100"></span><span class="stream-name">KernelFlow_Quality</span></td>
+        <td>Kernel Flow 2</td>
+        <td>48</td>
+        <td><span class="stream-rate">5 Hz</span></td>
+        <td>Signal Quality Index</td>
+      </tr>
+      <tr>
+        <td><span class="stream-dot" style="background:#00E5FF"></span><span class="stream-name">Gazepoint</span></td>
+        <td>Gazepoint GP3</td>
+        <td>6</td>
+        <td><span class="stream-rate">60 Hz</span></td>
+        <td>Fixation, Pupil, Validity</td>
+      </tr>
+      <tr>
+        <td><span class="stream-dot" style="background:#00BCD4"></span><span class="stream-name">TobiiGlasses_Gaze</span></td>
+        <td>Tobii Pro Glasses 3</td>
+        <td>10</td>
+        <td><span class="stream-rate">50 Hz</span></td>
+        <td>Binocular Gaze + Pupil</td>
+      </tr>
+      <tr>
+        <td><span class="stream-dot" style="background:#00897B"></span><span class="stream-name">TobiiGlasses_IMU</span></td>
+        <td>Tobii Pro Glasses 3</td>
+        <td>9</td>
+        <td><span class="stream-rate">100 Hz</span></td>
+        <td>Accel / Gyro / Mag</td>
+      </tr>
+      <tr>
+        <td><span class="stream-dot" style="background:#2196F3"></span><span class="stream-name">PupilNeon_Gaze</span></td>
+        <td>Pupil Labs Neon</td>
+        <td>17</td>
+        <td><span class="stream-rate">200 Hz</span></td>
+        <td>Gaze, Blink, Fixation, 3D Eye</td>
+      </tr>
+      <tr>
+        <td><span class="stream-dot" style="background:#1565C0"></span><span class="stream-name">PupilNeon_IMU</span></td>
+        <td>Pupil Labs Neon</td>
+        <td>10</td>
+        <td><span class="stream-rate">110 Hz</span></td>
+        <td>Accel / Gyro / Quaternion</td>
+      </tr>
+      <tr>
+        <td><span class="stream-dot" style="background:#F50057"></span><span class="stream-name">Delsys_EMG</span></td>
+        <td>Delsys Trigno</td>
+        <td>16</td>
+        <td><span class="stream-rate">2000 Hz</span></td>
+        <td>Surface Electromyography</td>
+      </tr>
+      <tr>
+        <td><span class="stream-dot" style="background:#C51162"></span><span class="stream-name">Delsys_AUX</span></td>
+        <td>Delsys Trigno</td>
+        <td>48</td>
+        <td><span class="stream-rate">148.1 Hz</span></td>
+        <td>Accelerometer / Auxiliary</td>
+      </tr>
+      <tr>
+        <td><span class="stream-dot" style="background:#76FF03"></span><span class="stream-name">StretchSense</span></td>
+        <td>StretchSense Gloves + Suit</td>
+        <td>224</td>
+        <td><span class="stream-rate">Variable</span></td>
+        <td>Hand + Body Kinematics</td>
+      </tr>
+      <tr>
+        <td><span class="stream-dot" style="background:#448AFF"></span><span class="stream-name">Microphone</span></td>
+        <td>System Microphone</td>
+        <td>1</td>
+        <td><span class="stream-rate">44100 Hz</span></td>
+        <td>Audio / Voice</td>
+      </tr>
+      <tr>
+        <td><span class="stream-dot" style="background:#FFC107"></span><span class="stream-name">StimulusMarkers</span></td>
+        <td>PsychoPy Stimulus System</td>
+        <td>Markers</td>
+        <td><span class="stream-rate">Event</span></td>
+        <td>Stimulus Onset / Response</td>
+      </tr>
+      <tr>
+        <td><span class="stream-dot" style="background:#795548"></span><span class="stream-name">PiCamera / PiCamera2</span></td>
+        <td>Raspberry Pi 5</td>
+        <td>2</td>
+        <td><span class="stream-rate">30 Hz</span></td>
+        <td>Frame Timestamps</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Architecture diagram -->
+  <div class="section-title">Data Pipeline</div>
+  <div class="architecture">
+    <div class="arch-flow">
+      <div class="arch-col">
+        <div class="arch-col-title">Sensors</div>
+        <div class="arch-node" style="border-color: rgba(124,77,255,0.3)">
+          <span class="node-label">Neural</span>EEG + fNIRS
+        </div>
+        <div class="arch-node" style="border-color: rgba(0,229,255,0.3)">
+          <span class="node-label">Ocular</span>Gaze + Pupil
+        </div>
+        <div class="arch-node" style="border-color: rgba(245,0,87,0.3)">
+          <span class="node-label">Muscular</span>EMG
+        </div>
+        <div class="arch-node" style="border-color: rgba(118,255,3,0.3)">
+          <span class="node-label">Kinematic</span>Hands + Body
+        </div>
+        <div class="arch-node" style="border-color: rgba(68,138,255,0.3)">
+          <span class="node-label">Ambient</span>Audio + Video
+        </div>
+      </div>
+      <div class="arch-arrow">&#8594;</div>
+      <div class="arch-col">
+        <div class="arch-col-title">Bridge Scripts</div>
+        <div class="arch-node">
+          <span class="node-label">Python</span>
+          *_lsl.py<br>
+          <span style="font-size:9px;color:var(--text3)">Device SDK &rarr; LSL</span>
+        </div>
+      </div>
+      <div class="arch-arrow">&#8594;</div>
+      <div class="arch-col">
+        <div class="arch-col-title">Transport</div>
+        <div class="arch-node" style="border-color: rgba(68,85,204,0.3)">
+          <span class="node-label">Protocol</span>
+          Lab Streaming Layer<br>
+          <span style="font-size:9px;color:var(--text3)">Network-synced timestamps</span>
+        </div>
+      </div>
+      <div class="arch-arrow">&#8594;</div>
+      <div class="arch-col">
+        <div class="arch-col-title">Storage</div>
+        <div class="arch-node" style="border-color: rgba(68,85,204,0.3)">
+          <span class="node-label">LabRecorder</span>
+          .XDF files<br>
+          <span style="font-size:9px;color:var(--text3)">BIDS-compliant naming</span>
+        </div>
+      </div>
+      <div class="arch-arrow">&#8594;</div>
+      <div class="arch-col">
+        <div class="arch-col-title">Visualization</div>
+        <div class="arch-node" style="border-color: rgba(68,85,204,0.3)">
+          <span class="node-label">Real-time</span>
+          Live Dashboard<br>
+          <span style="font-size:9px;color:var(--text3)">PyQt5 + pyqtgraph</span>
+        </div>
+        <div class="arch-node" style="border-color: rgba(68,85,204,0.3)">
+          <span class="node-label">3D Demo</span>
+          Brain Emulation<br>
+          <span style="font-size:9px;color:var(--text3)">Three.js + WebGL</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modality breakdown -->
+  <div class="section-title">Modality Coverage</div>
+  <div class="modality-grid">
+    <div class="mod-card" style="--mod-color: #7C4DFF">
+      <div class="mod-icon" style="color:#7C4DFF">&#9889;</div>
+      <div class="mod-name">EEG</div>
+      <div class="mod-detail">24 CH &middot; 300 HZ</div>
+    </div>
+    <div class="mod-card" style="--mod-color: #FF1744">
+      <div class="mod-icon" style="color:#FF1744">&#9673;</div>
+      <div class="mod-name">fNIRS</div>
+      <div class="mod-detail">144 CH &middot; 5 HZ</div>
+    </div>
+    <div class="mod-card" style="--mod-color: #00E5FF">
+      <div class="mod-icon" style="color:#00E5FF">&#9678;</div>
+      <div class="mod-name">Eye Tracking</div>
+      <div class="mod-detail">33 CH &middot; 60-200 HZ</div>
+    </div>
+    <div class="mod-card" style="--mod-color: #F50057">
+      <div class="mod-icon" style="color:#F50057">&#9851;</div>
+      <div class="mod-name">EMG</div>
+      <div class="mod-detail">64 CH &middot; 2000 HZ</div>
+    </div>
+    <div class="mod-card" style="--mod-color: #76FF03">
+      <div class="mod-icon" style="color:#76FF03">&#9995;</div>
+      <div class="mod-name">Hand Kinematics</div>
+      <div class="mod-detail">112 CH &middot; BILATERAL</div>
+    </div>
+    <div class="mod-card" style="--mod-color: #FFD600">
+      <div class="mod-icon" style="color:#FFD600">&#9898;</div>
+      <div class="mod-name">Body Motion</div>
+      <div class="mod-detail">112 CH &middot; FULL BODY</div>
+    </div>
+    <div class="mod-card" style="--mod-color: #FF6D00">
+      <div class="mod-icon" style="color:#FF6D00">&#8634;</div>
+      <div class="mod-name">IMU</div>
+      <div class="mod-detail">19 CH &middot; 100-110 HZ</div>
+    </div>
+    <div class="mod-card" style="--mod-color: #448AFF">
+      <div class="mod-icon" style="color:#448AFF">&#9835;</div>
+      <div class="mod-name">Audio / Video</div>
+      <div class="mod-detail">1 CH + 5 FEEDS</div>
+    </div>
+  </div>
+
+  <!-- Recordings -->
+  <div class="section-title">Recording Sessions (42 XDF files)</div>
+  <div class="sessions-grid">
+    <div class="session-card">
+      <div class="session-card-header">
+        <div class="session-card-name">sub-P001</div>
+        <div class="session-card-size">13.8 GB</div>
+      </div>
+      <div class="session-card-meta">
+        Session S001 &middot; 6 runs<br>
+        Gaze + fNIRS + Hands + Body + Audio
+      </div>
+      <div class="session-bar"><div class="session-bar-fill" style="width:100%"></div></div>
+    </div>
+    <div class="session-card">
+      <div class="session-card-header">
+        <div class="session-card-name">sub-P007</div>
+        <div class="session-card-size">1.7 GB</div>
+      </div>
+      <div class="session-card-meta">
+        Session S007 &middot; 1 run<br>
+        Full multi-modal recording
+      </div>
+      <div class="session-bar"><div class="session-bar-fill" style="width:12%"></div></div>
+    </div>
+    <div class="session-card">
+      <div class="session-card-header">
+        <div class="session-card-name">sub-P002</div>
+        <div class="session-card-size">3.7 GB</div>
+      </div>
+      <div class="session-card-meta">
+        Session S001 &middot; 2 runs<br>
+        Full multi-modal recording
+      </div>
+      <div class="session-bar"><div class="session-bar-fill" style="width:27%"></div></div>
+    </div>
+    <div class="session-card">
+      <div class="session-card-header">
+        <div class="session-card-name">sub-090</div>
+        <div class="session-card-size">1.5 GB</div>
+      </div>
+      <div class="session-card-meta">
+        3 sessions (Baseline) &middot; 3 runs<br>
+        Multi-session longitudinal
+      </div>
+      <div class="session-bar"><div class="session-bar-fill" style="width:11%"></div></div>
+    </div>
+    <div class="session-card">
+      <div class="session-card-header">
+        <div class="session-card-name">sub-09031</div>
+        <div class="session-card-size">732 MB</div>
+      </div>
+      <div class="session-card-meta">
+        Session 1 &middot; Baseline task<br>
+        Single session recording
+      </div>
+      <div class="session-bar"><div class="session-bar-fill" style="width:5%"></div></div>
+    </div>
+    <div class="session-card">
+      <div class="session-card-header">
+        <div class="session-card-name">sub-0999</div>
+        <div class="session-card-size">176 MB</div>
+      </div>
+      <div class="session-card-meta">
+        Session 01 &middot; Baseline task<br>
+        Single session recording
+      </div>
+      <div class="session-bar"><div class="session-bar-fill" style="width:1.3%"></div></div>
+    </div>
+    <div class="session-card">
+      <div class="session-card-header">
+        <div class="session-card-name">sub-2003</div>
+        <div class="session-card-size">46 MB</div>
+      </div>
+      <div class="session-card-meta">
+        2 sessions &middot; Baseline task<br>
+        Repeat participant
+      </div>
+      <div class="session-bar"><div class="session-bar-fill" style="width:0.3%"></div></div>
+    </div>
+    <div class="session-card">
+      <div class="session-card-header">
+        <div class="session-card-name">session_*</div>
+        <div class="session-card-size">3.1 GB</div>
+      </div>
+      <div class="session-card-meta">
+        14 timestamped sessions<br>
+        Feb 27 &ndash; Mar 6, 2026
+      </div>
+      <div class="session-bar"><div class="session-bar-fill" style="width:23%"></div></div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div class="footer-text">NETHOLABS &middot; FUNCTIONAL BRAIN EMULATION &middot; 2026</div>
+  </div>
+
+</div>
+
+</body>
+</html>
