@@ -5,800 +5,635 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Functional Brain Emulation — Data Quality Report</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap');
-
-  :root {
-    --bg: #050508;
-    --card: rgba(8,8,18,0.9);
-    --border: rgba(50,50,100,0.2);
-    --border-hi: rgba(80,80,180,0.3);
-    --text1: #ccd;
-    --text2: #778;
-    --text3: #445;
-    --accent: #4455cc;
-    --red: #FF1744;
-    --amber: #FF9100;
-    --green: #00E676;
-    --blue: #448AFF;
-  }
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
   body {
-    background: var(--bg);
-    color: var(--text1);
+    background: #fff;
+    color: #1a1a2e;
     font-family: 'Inter', -apple-system, sans-serif;
     line-height: 1.6;
-    overflow-x: hidden;
-  }
-  body::before {
-    content: '';
-    position: fixed; inset: 0; z-index: 0;
-    background:
-      radial-gradient(ellipse 800px 600px at 20% 30%, rgba(80,20,20,0.06), transparent),
-      radial-gradient(ellipse 600px 800px at 80% 70%, rgba(60,20,80,0.05), transparent);
-    pointer-events: none;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
-  .container {
-    position: relative; z-index: 1;
-    max-width: 1100px;
+  .page {
+    max-width: 960px;
     margin: 0 auto;
-    padding: 60px 40px 100px;
+    padding: 50px 48px;
   }
 
   /* ── Header ────────────────────────────────────────── */
   .header {
-    text-align: center;
-    margin-bottom: 70px;
-    padding-top: 40px;
+    border-bottom: 3px solid #1a1a2e;
+    padding-bottom: 20px;
+    margin-bottom: 36px;
   }
-  .header-label {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 10px; letter-spacing: 6px; color: var(--text3);
-    text-transform: uppercase;
-    margin-bottom: 20px;
+  .header-org {
+    font-size: 11px; font-weight: 600; letter-spacing: 3px;
+    text-transform: uppercase; color: #666;
+    margin-bottom: 6px;
   }
   .header h1 {
-    font-size: 40px; font-weight: 200; letter-spacing: 10px;
-    color: #fff;
+    font-size: 32px; font-weight: 700; letter-spacing: 1px;
+    color: #1a1a2e;
+    line-height: 1.2;
+  }
+  .header-meta {
+    display: flex; justify-content: space-between;
+    margin-top: 10px;
+    font-size: 11px; color: #888;
+  }
+
+  /* ── Section ───────────────────────────────────────── */
+  h2 {
+    font-size: 14px; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase;
+    color: #1a1a2e;
     margin-bottom: 16px;
-  }
-  .header h1 span { color: var(--amber); font-weight: 300; }
-  .header-sub {
-    font-size: 13px; letter-spacing: 4px; color: var(--text3);
-    font-weight: 300;
-  }
-  .header-line {
-    width: 60px; height: 1px;
-    background: linear-gradient(90deg, transparent, var(--amber), transparent);
-    margin: 30px auto 0;
+    margin-top: 40px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e0e0e8;
   }
 
-  /* ── Severity legend ───────────────────────────────── */
-  .legend {
-    display: flex; justify-content: center; gap: 30px;
-    margin-bottom: 50px;
-  }
-  .legend-item {
-    display: flex; align-items: center; gap: 8px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 9px; letter-spacing: 2px; color: var(--text3);
-  }
-  .legend-dot {
-    width: 8px; height: 8px; border-radius: 50%;
-  }
-
-  /* ── Section titles ────────────────────────────────── */
-  .section-title {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 9px; letter-spacing: 5px;
-    color: var(--text3);
-    text-transform: uppercase;
-    margin-bottom: 24px;
-    margin-top: 60px;
-    display: flex; align-items: center; gap: 16px;
-  }
-  .section-title::after {
-    content: '';
-    flex: 1; height: 1px;
-    background: var(--border);
-  }
-
-  /* ── Issue cards ───────────────────────────────────── */
-  .issues-list {
-    display: flex; flex-direction: column;
-    gap: 16px;
-    margin-bottom: 20px;
-  }
-  .issue-card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-left: 3px solid var(--severity-color);
-    border-radius: 0 10px 10px 0;
-    padding: 24px 28px;
+  /* ── Summary boxes ─────────────────────────────────── */
+  .summary-row {
     display: grid;
-    grid-template-columns: auto 1fr auto;
-    gap: 20px;
-    align-items: start;
-    transition: border-color 0.3s, box-shadow 0.3s;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    margin-bottom: 36px;
+    border: 1px solid #e0e0e8;
+    border-radius: 6px;
+    overflow: hidden;
   }
-  .issue-card:hover {
-    border-color: var(--border-hi);
-    border-left-color: var(--severity-color);
-    box-shadow: 0 0 40px rgba(60,60,150,0.04);
-  }
-
-  .issue-number {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 24px; font-weight: 200;
-    color: var(--severity-color);
-    opacity: 0.5;
-    min-width: 36px;
+  .summary-cell {
+    padding: 20px;
     text-align: center;
+    border-right: 1px solid #e0e0e8;
+  }
+  .summary-cell:last-child { border-right: none; }
+  .summary-number {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 32px; font-weight: 700;
     line-height: 1;
-    padding-top: 2px;
+  }
+  .summary-label {
+    font-size: 10px; font-weight: 600;
+    letter-spacing: 1px;
+    color: #888;
+    margin-top: 6px;
+  }
+  .summary-sub {
+    font-size: 10px; color: #aaa;
+    margin-top: 2px;
   }
 
-  .issue-body { flex: 1; }
+  /* ── Issue list ────────────────────────────────────── */
+  .issue {
+    border: 1px solid #e0e0e8;
+    border-radius: 6px;
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+  .issue-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    background: #f8f8fc;
+    border-bottom: 1px solid #e0e0e8;
+  }
+  .issue-severity {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; font-weight: 600;
+    letter-spacing: 1.5px;
+    padding: 3px 8px;
+    border-radius: 3px;
+    color: #fff;
+    flex-shrink: 0;
+  }
+  .sev-critical { background: #d32f2f; }
+  .sev-warning { background: #ef6c00; }
+  .sev-info { background: #1976D2; }
   .issue-title {
-    font-size: 15px; font-weight: 500;
-    letter-spacing: 0.5px;
-    margin-bottom: 8px;
-    color: var(--text1);
+    font-size: 14px; font-weight: 600;
+    color: #1a1a2e;
+    flex: 1;
+  }
+  .issue-impact {
+    font-size: 9px; font-weight: 500;
+    letter-spacing: 1px; text-transform: uppercase;
+    color: #999;
+  }
+  .issue-body {
+    padding: 16px 18px;
   }
   .issue-desc {
-    font-size: 12px; color: var(--text2);
+    font-size: 12px; color: #555;
     line-height: 1.7;
     margin-bottom: 12px;
   }
   .issue-evidence {
-    background: rgba(255,255,255,0.02);
-    border: 1px solid rgba(40,40,80,0.2);
-    border-radius: 6px;
-    padding: 12px 16px;
+    background: #f4f4f8;
+    border: 1px solid #e8e8f0;
+    border-radius: 4px;
+    padding: 12px 14px;
     font-family: 'JetBrains Mono', monospace;
     font-size: 10px;
-    color: var(--text3);
-    line-height: 1.8;
+    color: #666;
+    line-height: 1.9;
   }
-  .issue-evidence .highlight {
-    color: var(--severity-color);
-    font-weight: 500;
-  }
-  .issue-evidence .dim { opacity: 0.5; }
-
-  .issue-meta {
-    display: flex; flex-direction: column;
-    align-items: flex-end; gap: 8px;
-    min-width: 100px;
-  }
-  .severity-badge {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 8px; letter-spacing: 2px;
-    color: var(--severity-color);
-    border: 1px solid var(--severity-color);
-    border-radius: 4px;
-    padding: 3px 10px;
-    opacity: 0.7;
-    text-transform: uppercase;
-  }
-  .impact-tag {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 7px; letter-spacing: 1.5px;
-    color: var(--text3);
-    text-transform: uppercase;
-  }
+  .issue-evidence .hl { color: #d32f2f; font-weight: 500; }
+  .issue-evidence .hw { color: #ef6c00; font-weight: 500; }
+  .issue-evidence .dim { color: #aaa; }
 
   /* ── Coverage matrix ───────────────────────────────── */
-  .matrix-wrapper {
-    overflow-x: auto;
-    margin-bottom: 20px;
-  }
-  .coverage-matrix {
+  .matrix-table {
     width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    overflow: hidden;
+    border-collapse: collapse;
+    margin-bottom: 32px;
     font-size: 11px;
   }
-  .coverage-matrix th {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 8px; letter-spacing: 1.5px;
-    color: var(--text3);
-    text-transform: uppercase;
-    padding: 12px 10px;
+  .matrix-table thead th {
+    font-size: 8px; font-weight: 600;
+    letter-spacing: 1px; text-transform: uppercase;
+    color: #888;
+    padding: 8px 6px;
     text-align: center;
-    background: rgba(10,10,25,0.8);
-    border-bottom: 1px solid var(--border);
+    border-bottom: 2px solid #1a1a2e;
     white-space: nowrap;
   }
-  .coverage-matrix th:first-child { text-align: left; padding-left: 16px; }
-  .coverage-matrix td {
-    padding: 10px;
+  .matrix-table thead th:first-child { text-align: left; padding-left: 12px; }
+  .matrix-table tbody td {
+    padding: 8px 6px;
     text-align: center;
-    border-bottom: 1px solid rgba(30,30,60,0.12);
-    color: var(--text2);
+    border-bottom: 1px solid #f0f0f4;
+    font-size: 12px;
   }
-  .coverage-matrix td:first-child {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 10px; font-weight: 500;
-    color: var(--text1);
+  .matrix-table tbody td:first-child {
+    font-weight: 600; text-align: left;
+    padding-left: 12px; color: #1a1a2e;
+    font-size: 11px;
+  }
+  .matrix-table tbody tr:nth-child(even) { background: #fafafd; }
+  .c-yes { color: #2e7d32; font-weight: 600; }
+  .c-no { color: #ddd; }
+  .c-partial { color: #ef6c00; font-weight: 600; }
+  .matrix-table tbody tr:last-child {
+    border-top: 2px solid #1a1a2e;
+    font-weight: 600;
+  }
+  .matrix-table tbody tr:last-child td { border-bottom: none; padding-top: 10px; }
+
+  /* ── File health ───────────────────────────────────── */
+  .file-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 32px;
+    font-size: 11px;
+  }
+  .file-table thead th {
+    font-size: 9px; font-weight: 600;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    color: #888;
+    padding: 8px 10px;
     text-align: left;
-    padding-left: 16px;
-    white-space: nowrap;
+    border-bottom: 2px solid #1a1a2e;
   }
-  .coverage-matrix tr:last-child td { border-bottom: none; }
-
-  .cell-yes {
-    color: var(--green); font-weight: 500;
+  .file-table tbody td {
+    padding: 6px 10px;
+    border-bottom: 1px solid #f0f0f4;
+    color: #444;
   }
-  .cell-no {
-    color: rgba(255,255,255,0.08);
-  }
-  .cell-partial {
-    color: var(--amber); font-weight: 500;
-  }
-
-  /* ── File health chart ─────────────────────────────── */
-  .file-health {
-    display: flex; flex-direction: column; gap: 6px;
-    margin-bottom: 20px;
-  }
-  .fh-row {
-    display: flex; align-items: center; gap: 12px;
-  }
-  .fh-label {
+  .file-table tbody tr:nth-child(even) { background: #fafafd; }
+  .mono {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 9px; color: var(--text3);
-    width: 140px; text-align: right;
-    flex-shrink: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-size: 11px;
   }
-  .fh-bar-container {
-    flex: 1; height: 14px;
-    background: rgba(20,20,40,0.4);
-    border-radius: 3px;
-    overflow: hidden;
+  .bar-cell {
     position: relative;
+    padding-right: 60px !important;
   }
-  .fh-bar {
-    height: 100%;
-    border-radius: 3px;
-    transition: width 0.5s;
+  .file-bar {
+    display: inline-block;
+    height: 10px;
+    border-radius: 2px;
+    vertical-align: middle;
   }
-  .fh-size {
+  .tag-old {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 9px; color: var(--text3);
-    width: 60px;
-    text-align: right;
-    flex-shrink: 0;
+    font-size: 8px; font-weight: 600;
+    color: #ef6c00;
+    background: #fff3e0;
+    padding: 1px 5px;
+    border-radius: 2px;
   }
-  .fh-tag {
+  .tag-good {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 7px; letter-spacing: 1px;
-    width: 50px; text-align: center;
-    flex-shrink: 0;
+    font-size: 8px; font-weight: 600;
+    color: #2e7d32;
+    background: #e8f5e9;
+    padding: 1px 5px;
+    border-radius: 2px;
   }
-
-  /* ── Summary cards ─────────────────────────────────── */
-  .summary-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-    margin-bottom: 60px;
-  }
-  .summary-card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 24px;
-    text-align: center;
-  }
-  .summary-number {
+  .tag-tiny {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 36px; font-weight: 200;
-    line-height: 1;
-  }
-  .summary-label {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 8px; letter-spacing: 3px;
-    color: var(--text3);
-    margin-top: 8px;
-    text-transform: uppercase;
-  }
-  .summary-detail {
-    font-size: 10px; color: var(--text3);
-    margin-top: 6px;
+    font-size: 8px; font-weight: 600;
+    color: #d32f2f;
+    background: #ffebee;
+    padding: 1px 5px;
+    border-radius: 2px;
   }
 
   /* ── Recommendations ───────────────────────────────── */
-  .rec-list {
-    display: flex; flex-direction: column;
-    gap: 10px;
-    margin-bottom: 40px;
+  .rec-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 32px;
+    font-size: 12px;
   }
-  .rec-item {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 16px 20px;
-    display: flex; gap: 14px;
-    align-items: flex-start;
+  .rec-table thead th {
+    font-size: 9px; font-weight: 600;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    color: #888;
+    padding: 8px 10px;
+    text-align: left;
+    border-bottom: 2px solid #1a1a2e;
   }
-  .rec-icon {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 14px; color: var(--green);
-    flex-shrink: 0;
-    line-height: 1.4;
-  }
-  .rec-text {
-    font-size: 12px; color: var(--text2);
+  .rec-table tbody td {
+    padding: 10px;
+    border-bottom: 1px solid #f0f0f4;
+    color: #444;
+    vertical-align: top;
     line-height: 1.6;
   }
-  .rec-text strong {
-    color: var(--text1); font-weight: 500;
+  .rec-table tbody tr:nth-child(even) { background: #fafafd; }
+  .rec-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700; color: #1a1a2e;
+    font-size: 13px;
   }
+  .rec-priority {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; font-weight: 600;
+    letter-spacing: 1px;
+    padding: 2px 6px;
+    border-radius: 3px;
+  }
+  .pri-high { background: #ffebee; color: #d32f2f; }
+  .pri-med { background: #fff3e0; color: #ef6c00; }
+  .pri-low { background: #e3f2fd; color: #1976D2; }
 
   /* ── Footer ────────────────────────────────────────── */
   .footer {
-    text-align: center;
-    padding: 60px 0 20px;
-    border-top: 1px solid var(--border);
-  }
-  .footer-text {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 9px; letter-spacing: 3px;
-    color: var(--text3);
+    margin-top: 50px;
+    padding-top: 16px;
+    border-top: 1px solid #e0e0e8;
+    display: flex; justify-content: space-between;
+    font-size: 10px; color: #aaa;
   }
 
-  @media (max-width: 800px) {
-    .issue-card { grid-template-columns: 1fr; }
-    .issue-meta { flex-direction: row; align-items: center; }
-    .issue-number { display: none; }
-    .summary-grid { grid-template-columns: 1fr; }
-    .container { padding: 30px 20px 60px; }
-    .header h1 { font-size: 24px; letter-spacing: 6px; }
+  @media print {
+    .page { padding: 30px; }
   }
 </style>
 </head>
 <body>
 
-<div class="container">
+<div class="page">
 
-  <!-- Header -->
   <div class="header">
-    <div class="header-label">Netholabs Research</div>
-    <h1>DATA <span>QUALITY</span> REPORT</h1>
-    <div class="header-sub">FUNCTIONAL BRAIN EMULATION &middot; 67 GB ACROSS 42 RECORDINGS</div>
-    <div class="header-line"></div>
-  </div>
-
-  <!-- Legend -->
-  <div class="legend">
-    <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>CRITICAL</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div>WARNING</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div>INFO</div>
+    <div class="header-org">Netholabs</div>
+    <h1>Data Quality Report</h1>
+    <div class="header-meta">
+      <span>Functional Brain Emulation &mdash; 67 GB across 42 XDF recordings</span>
+      <span>March 2026</span>
+    </div>
   </div>
 
   <!-- Summary -->
-  <div class="summary-grid">
-    <div class="summary-card">
-      <div class="summary-number" style="color:var(--red)">3</div>
+  <div class="summary-row">
+    <div class="summary-cell">
+      <div class="summary-number" style="color:#d32f2f">3</div>
       <div class="summary-label">Critical Issues</div>
-      <div class="summary-detail">Block analysis or reduce validity</div>
+      <div class="summary-sub">Block analysis or reduce validity</div>
     </div>
-    <div class="summary-card">
-      <div class="summary-number" style="color:var(--amber)">3</div>
+    <div class="summary-cell">
+      <div class="summary-number" style="color:#ef6c00">3</div>
       <div class="summary-label">Warnings</div>
-      <div class="summary-detail">May affect data quality</div>
+      <div class="summary-sub">May affect data quality</div>
     </div>
-    <div class="summary-card">
-      <div class="summary-number" style="color:var(--blue)">2</div>
+    <div class="summary-cell">
+      <div class="summary-number" style="color:#1976D2">2</div>
       <div class="summary-label">Info</div>
-      <div class="summary-detail">Observations for cleanup</div>
+      <div class="summary-sub">Cleanup and organization</div>
     </div>
   </div>
 
   <!-- Issues -->
-  <div class="section-title">Issues Identified</div>
-  <div class="issues-list">
+  <h2>Issues</h2>
 
-    <!-- Issue 1 -->
-    <div class="issue-card" style="--severity-color: var(--red)">
-      <div class="issue-number">01</div>
-      <div class="issue-body">
-        <div class="issue-title">Single Subject Dominance</div>
-        <div class="issue-desc">
-          All 8 largest session recordings appear to be from the same participant. The 42 XDF files list 9 subject IDs, but the richest multi-modal data comes from undifferentiated <code>session_*</code> timestamped files. Between-subject variability cannot be assessed with current data.
-        </div>
-        <div class="issue-evidence">
-          <span class="dim">Subject distribution:</span><br>
-          <span class="highlight">session_* (unnamed)</span> &mdash; 14 files, 3.1 GB, 8 modalities each<br>
-          sub-P001 &mdash; 6 files, 13.8 GB <span class="dim">(includes 5 _old versions)</span><br>
-          sub-P002 &mdash; 2 files, 3.7 GB <span class="dim">(includes 1 _old version)</span><br>
-          <span class="dim">sub-P007, P009, 090, 0903, 09031, 0999, 2003 &mdash; 1-3 files each, smaller</span>
-        </div>
+  <!-- 1 -->
+  <div class="issue">
+    <div class="issue-header">
+      <div class="issue-severity sev-critical">CRITICAL</div>
+      <div class="issue-title">Single Subject Dominance</div>
+      <div class="issue-impact">Generalizability</div>
+    </div>
+    <div class="issue-body">
+      <div class="issue-desc">
+        All 8 largest session recordings appear to be from the same participant. The 42 XDF files list 9 subject IDs, but the richest multi-modal data comes from undifferentiated <code>session_*</code> timestamped files with no subject identifier. Between-subject variability cannot be assessed with current data.
       </div>
-      <div class="issue-meta">
-        <div class="severity-badge">CRITICAL</div>
-        <div class="impact-tag">Generalizability</div>
+      <div class="issue-evidence">
+        <span class="dim">Subject distribution:</span><br>
+        <span class="hl">session_* (unnamed)</span> &mdash; 14 files, 3.1 GB, 8 modalities each<br>
+        sub-P001 &mdash; 6 files, 13.8 GB <span class="dim">(includes 5 _old versions)</span><br>
+        sub-P002 &mdash; 2 files, 3.7 GB <span class="dim">(includes 1 _old)</span><br>
+        <span class="dim">sub-P007, P009, 090, 0903, 09031, 0999, 2003 &mdash; 1-3 files each, smaller</span>
       </div>
     </div>
-
-    <!-- Issue 2 -->
-    <div class="issue-card" style="--severity-color: var(--red)">
-      <div class="issue-number">02</div>
-      <div class="issue-body">
-        <div class="issue-title">No Session Contains All Modalities</div>
-        <div class="issue-desc">
-          The lab stack and mobile stack have never been recorded simultaneously. No single XDF file contains all 11 modalities. This means cross-stack correlations (e.g., EEG vs. fNIRS, or DSI-24 vs. Kernel Flow) cannot be computed from any existing recording.
-        </div>
-        <div class="issue-evidence">
-          <span class="dim">Lab sessions contain:</span> Gazepoint + KernelFlow (x3) + StretchSense + Microphone<br>
-          <span class="dim">Mobile sessions contain:</span> DSI24 + TobiiGlasses (x2) + StretchSense<br>
-          <span class="highlight">Missing overlap:</span> EEG never co-recorded with fNIRS<br>
-          <span class="highlight">Missing overlap:</span> EMG (Delsys) not present in any exported session
-        </div>
-      </div>
-      <div class="issue-meta">
-        <div class="severity-badge">CRITICAL</div>
-        <div class="impact-tag">Cross-modal analysis</div>
-      </div>
-    </div>
-
-    <!-- Issue 3 -->
-    <div class="issue-card" style="--severity-color: var(--red)">
-      <div class="issue-number">03</div>
-      <div class="issue-body">
-        <div class="issue-title">Kernel Flow Sample Rate Mismatch</div>
-        <div class="issue-desc">
-          All three KernelFlow LSL streams (Red, IR, Quality) report a nominal rate of 5 Hz in their stream metadata, but pyxdf measured effective rates of 8&ndash;13 Hz across sessions. This 2&ndash;3x discrepancy means LSL timestamp correction may be miscalculating, causing synchronization drift with other streams.
-        </div>
-        <div class="issue-evidence">
-          <span class="dim">Reported rate:</span> 5.0000 Hz<br>
-          <span class="dim">Measured rates across sessions:</span><br>
-          &nbsp;&nbsp;KernelFlow_Red &mdash; <span class="highlight">8.08 &ndash; 13.14 Hz</span><br>
-          &nbsp;&nbsp;KernelFlow_IR &nbsp;&mdash; <span class="highlight">8.32 &ndash; 13.13 Hz</span><br>
-          &nbsp;&nbsp;KernelFlow_Quality &mdash; <span class="highlight">0.99 &ndash; 13.62 Hz</span><br>
-          <span class="dim">Quality stream in one session dropped to ~1 Hz</span>
-        </div>
-      </div>
-      <div class="issue-meta">
-        <div class="severity-badge">CRITICAL</div>
-        <div class="impact-tag">Synchronization</div>
-      </div>
-    </div>
-
-    <!-- Issue 4 -->
-    <div class="issue-card" style="--severity-color: var(--amber)">
-      <div class="issue-number">04</div>
-      <div class="issue-body">
-        <div class="issue-title">Short Usable Overlap Windows</div>
-        <div class="issue-desc">
-          Many sessions have limited time windows where all streams are simultaneously active. Streams start and stop at different times, reducing the usable overlapping segment. One session had only 37 seconds of multi-stream overlap.
-        </div>
-        <div class="issue-evidence">
-          <span class="dim">session_20260306_171345.xdf:</span> <span class="highlight">37s overlap</span> <span class="dim">(file is 22.5 MB)</span><br>
-          <span class="dim">session_20260227_145319.xdf:</span> <span class="highlight">&lt;5s usable</span> <span class="dim">(file is 241 KB)</span><br>
-          <span class="dim">Best sessions (Mar 5-6):</span> 120s+ overlap available<br>
-          <span class="dim">Effective yield:</span> ~877s total across 8 sessions <span class="dim">(vs. potential minutes of raw data)</span>
-        </div>
-      </div>
-      <div class="issue-meta">
-        <div class="severity-badge">WARNING</div>
-        <div class="impact-tag">Usable Duration</div>
-      </div>
-    </div>
-
-    <!-- Issue 5 -->
-    <div class="issue-card" style="--severity-color: var(--amber)">
-      <div class="issue-number">05</div>
-      <div class="issue-body">
-        <div class="issue-title">Gazepoint Rate Anomaly</div>
-        <div class="issue-desc">
-          In one session, the Gazepoint stream was measured at 147 Hz instead of the expected 60 Hz. This may indicate duplicate samples, a misconfigured Gazepoint Control setting, or two Gazepoint streams being merged.
-        </div>
-        <div class="issue-evidence">
-          <span class="dim">Expected rate:</span> 60.0000 Hz<br>
-          <span class="dim">Measured rate:</span> <span class="highlight">147.1897 Hz</span><br>
-          <span class="dim">Session:</span> One of the Feb 27 &ndash; Mar 6 recordings<br>
-          <span class="dim">Other sessions:</span> Normal ~60 Hz
-        </div>
-      </div>
-      <div class="issue-meta">
-        <div class="severity-badge">WARNING</div>
-        <div class="impact-tag">Data Integrity</div>
-      </div>
-    </div>
-
-    <!-- Issue 6 -->
-    <div class="issue-card" style="--severity-color: var(--amber)">
-      <div class="issue-number">06</div>
-      <div class="issue-body">
-        <div class="issue-title">_old File Accumulation</div>
-        <div class="issue-desc">
-          13 XDF files carry <code>_old1</code> through <code>_old5</code> suffixes, suggesting LabRecorder overwrites or manual re-recordings. These inflate the total data footprint by ~15 GB but may contain partial, corrupted, or superseded data.
-        </div>
-        <div class="issue-evidence">
-          <span class="dim">Examples:</span><br>
-          sub-P001_..._eeg_old1.xdf &mdash; <span class="highlight">4.6 GB</span><br>
-          sub-P001_..._eeg_old2.xdf &mdash; <span class="highlight">7.1 GB</span><br>
-          sub-P001_..._eeg_old3.xdf &mdash; 1.3 GB<br>
-          sub-P001_..._eeg_old4.xdf &mdash; 421 MB<br>
-          sub-P001_..._eeg_old5.xdf &mdash; 176 MB<br>
-          <span class="dim">+ 8 more _old files across other subjects</span>
-        </div>
-      </div>
-      <div class="issue-meta">
-        <div class="severity-badge">WARNING</div>
-        <div class="impact-tag">Storage / Clarity</div>
-      </div>
-    </div>
-
-    <!-- Issue 7 -->
-    <div class="issue-card" style="--severity-color: var(--blue)">
-      <div class="issue-number">07</div>
-      <div class="issue-body">
-        <div class="issue-title">Aborted / Minimal Recordings</div>
-        <div class="issue-desc">
-          Several XDF files are extremely small (&lt;1 MB), likely from aborted recording attempts or quick equipment tests. These contain insufficient data for any analysis.
-        </div>
-        <div class="issue-evidence">
-          <span class="dim">Files under 1 MB:</span><br>
-          sub-P009_ses-S009_...eeg.xdf &mdash; <span class="highlight">56 KB</span><br>
-          session_20260227_145319.xdf &mdash; <span class="highlight">241 KB</span><br>
-          session_20260305_150657.xdf &mdash; <span class="highlight">44 KB</span><br>
-          sub-P001_ses-S001_...eeg.xdf &mdash; <span class="highlight">301 KB</span><br>
-          sub-090_ses-090_...xdf &mdash; <span class="highlight">426 KB</span>
-        </div>
-      </div>
-      <div class="issue-meta">
-        <div class="severity-badge">INFO</div>
-        <div class="impact-tag">Cleanup</div>
-      </div>
-    </div>
-
-    <!-- Issue 8 -->
-    <div class="issue-card" style="--severity-color: var(--blue)">
-      <div class="issue-number">08</div>
-      <div class="issue-body">
-        <div class="issue-title">Inconsistent BIDS Naming</div>
-        <div class="issue-desc">
-          Subject and session identifiers use mixed conventions. Some use zero-padded numeric IDs (sub-P001, ses-S001), others use bare numbers (sub-090, ses-1), and many have no subject ID at all (session_YYYYMMDD_HHMMSS). This complicates automated analysis pipelines.
-        </div>
-        <div class="issue-evidence">
-          <span class="dim">Conventions observed:</span><br>
-          sub-P001_ses-S001_task-Default_run-001_eeg.xdf <span class="dim">&mdash; structured</span><br>
-          sub-090_ses-010_task-Baseline_run-001_.xdf <span class="dim">&mdash; different pattern</span><br>
-          sub-2003_ses-1_task-Baseline_run-001_.xdf <span class="dim">&mdash; no zero-padding</span><br>
-          session_20260306_091530.xdf <span class="dim">&mdash; <span class="highlight">no subject ID</span></span>
-        </div>
-      </div>
-      <div class="issue-meta">
-        <div class="severity-badge">INFO</div>
-        <div class="impact-tag">Organization</div>
-      </div>
-    </div>
-
   </div>
 
-  <!-- Modality coverage matrix -->
-  <div class="section-title">Modality Coverage Per Recording Type</div>
-  <div class="matrix-wrapper">
-    <table class="coverage-matrix">
-      <thead>
-        <tr>
-          <th>Session Type</th>
-          <th>EEG</th>
-          <th>fNIRS Oxy</th>
-          <th>fNIRS Deoxy</th>
-          <th>fNIRS QA</th>
-          <th>Gaze (Lab)</th>
-          <th>Gaze (Mobile)</th>
-          <th>EMG</th>
-          <th>Hand/Body</th>
-          <th>IMU</th>
-          <th>Audio</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>Lab sessions (session_*)</td>
-          <td class="cell-no">&mdash;</td>
-          <td class="cell-yes">&#10003;</td>
-          <td class="cell-yes">&#10003;</td>
-          <td class="cell-yes">&#10003;</td>
-          <td class="cell-yes">&#10003;</td>
-          <td class="cell-no">&mdash;</td>
-          <td class="cell-no">&mdash;</td>
-          <td class="cell-yes">&#10003;</td>
-          <td class="cell-no">&mdash;</td>
-          <td class="cell-yes">&#10003;</td>
-        </tr>
-        <tr>
-          <td>sub-P001 (BIDS)</td>
-          <td class="cell-partial">?</td>
-          <td class="cell-yes">&#10003;</td>
-          <td class="cell-yes">&#10003;</td>
-          <td class="cell-yes">&#10003;</td>
-          <td class="cell-yes">&#10003;</td>
-          <td class="cell-no">&mdash;</td>
-          <td class="cell-no">&mdash;</td>
-          <td class="cell-yes">&#10003;</td>
-          <td class="cell-no">&mdash;</td>
-          <td class="cell-yes">&#10003;</td>
-        </tr>
-        <tr>
-          <td>Mobile sessions</td>
-          <td class="cell-yes">&#10003;</td>
-          <td class="cell-no">&mdash;</td>
-          <td class="cell-no">&mdash;</td>
-          <td class="cell-no">&mdash;</td>
-          <td class="cell-no">&mdash;</td>
-          <td class="cell-yes">&#10003;</td>
-          <td class="cell-no">&mdash;</td>
-          <td class="cell-yes">&#10003;</td>
-          <td class="cell-yes">&#10003;</td>
-          <td class="cell-no">&mdash;</td>
-        </tr>
-        <tr>
-          <td>Full coverage target</td>
-          <td class="cell-yes">&#10003;</td>
-          <td class="cell-yes">&#10003;</td>
-          <td class="cell-yes">&#10003;</td>
-          <td class="cell-yes">&#10003;</td>
-          <td class="cell-yes">&#10003;</td>
-          <td class="cell-yes">&#10003;</td>
-          <td class="cell-yes">&#10003;</td>
-          <td class="cell-yes">&#10003;</td>
-          <td class="cell-yes">&#10003;</td>
-          <td class="cell-yes">&#10003;</td>
-        </tr>
-      </tbody>
-    </table>
+  <!-- 2 -->
+  <div class="issue">
+    <div class="issue-header">
+      <div class="issue-severity sev-critical">CRITICAL</div>
+      <div class="issue-title">No Session Contains All Modalities</div>
+      <div class="issue-impact">Cross-Modal Analysis</div>
+    </div>
+    <div class="issue-body">
+      <div class="issue-desc">
+        The lab stack (fNIRS, GP3, StretchSense) and mobile stack (EEG, Tobii, Pupil Neon) have never been recorded simultaneously. No single XDF file contains all 11 modalities. Cross-stack correlations (e.g., EEG vs. fNIRS) cannot be computed from any existing recording. EMG (Delsys) has not appeared in any exported session.
+      </div>
+      <div class="issue-evidence">
+        <span class="dim">Lab sessions contain:</span> Gazepoint + KernelFlow (&times;3) + StretchSense + Microphone<br>
+        <span class="dim">Mobile sessions contain:</span> DSI24 + TobiiGlasses (&times;2) + StretchSense<br>
+        <span class="hl">EEG never co-recorded with fNIRS</span><br>
+        <span class="hl">EMG (Delsys) absent from all exported sessions</span>
+      </div>
+    </div>
   </div>
+
+  <!-- 3 -->
+  <div class="issue">
+    <div class="issue-header">
+      <div class="issue-severity sev-critical">CRITICAL</div>
+      <div class="issue-title">Kernel Flow Sample Rate Mismatch</div>
+      <div class="issue-impact">Synchronization</div>
+    </div>
+    <div class="issue-body">
+      <div class="issue-desc">
+        All three KernelFlow LSL streams report a nominal rate of 5 Hz in their metadata, but pyxdf measured effective rates of 8&ndash;13 Hz across sessions. This 2&ndash;3&times; discrepancy causes LSL's timestamp correction algorithm to miscalculate, introducing synchronization drift relative to other streams.
+      </div>
+      <div class="issue-evidence">
+        <span class="dim">Declared rate:</span> 5.0000 Hz<br>
+        <span class="dim">Measured rates:</span><br>
+        &nbsp;&nbsp;KernelFlow_Red &mdash; <span class="hl">8.08 &ndash; 13.14 Hz</span><br>
+        &nbsp;&nbsp;KernelFlow_IR &mdash; <span class="hl">8.32 &ndash; 13.13 Hz</span><br>
+        &nbsp;&nbsp;KernelFlow_Quality &mdash; <span class="hl">0.99 &ndash; 13.62 Hz</span> <span class="dim">(one session dropped to ~1 Hz)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4 -->
+  <div class="issue">
+    <div class="issue-header">
+      <div class="issue-severity sev-warning">WARNING</div>
+      <div class="issue-title">Short Usable Overlap Windows</div>
+      <div class="issue-impact">Usable Duration</div>
+    </div>
+    <div class="issue-body">
+      <div class="issue-desc">
+        Streams start and stop at different times within each recording, reducing the window where all modalities overlap. Some sessions yield under 40 seconds of usable multi-stream data despite large file sizes. Total usable overlap across 8 exported sessions: ~877 seconds (14.6 minutes).
+      </div>
+      <div class="issue-evidence">
+        session_20260306_171345.xdf &mdash; <span class="hw">37s overlap</span> <span class="dim">(22.5 MB file)</span><br>
+        session_20260227_145319.xdf &mdash; <span class="hw">&lt;5s usable</span> <span class="dim">(241 KB file)</span><br>
+        <span class="dim">Best sessions (Mar 5-6): 120s+ overlap</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5 -->
+  <div class="issue">
+    <div class="issue-header">
+      <div class="issue-severity sev-warning">WARNING</div>
+      <div class="issue-title">Gazepoint Rate Anomaly</div>
+      <div class="issue-impact">Data Integrity</div>
+    </div>
+    <div class="issue-body">
+      <div class="issue-desc">
+        In one session, the Gazepoint stream was measured at 147 Hz instead of the expected 60 Hz. This suggests duplicate samples, a Gazepoint Control misconfiguration, or two stream instances merged into one recording.
+      </div>
+      <div class="issue-evidence">
+        <span class="dim">Expected:</span> 60 Hz &nbsp;&nbsp;<span class="dim">|</span>&nbsp;&nbsp; <span class="dim">Measured:</span> <span class="hw">147.19 Hz</span> <span class="dim">(~2.5&times; expected)</span><br>
+        <span class="dim">Other sessions: normal ~60 Hz</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6 -->
+  <div class="issue">
+    <div class="issue-header">
+      <div class="issue-severity sev-warning">WARNING</div>
+      <div class="issue-title">_old File Accumulation</div>
+      <div class="issue-impact">Storage &amp; Clarity</div>
+    </div>
+    <div class="issue-body">
+      <div class="issue-desc">
+        13 XDF files carry <code>_old1</code> through <code>_old5</code> suffixes, totaling ~15 GB. These are LabRecorder overwrites or manual re-recordings that may contain partial, corrupted, or superseded data. They inflate the total dataset size and create ambiguity about which files are canonical.
+      </div>
+      <div class="issue-evidence">
+        sub-P001_..._eeg_old1.xdf &mdash; <span class="hw">4.6 GB</span><br>
+        sub-P001_..._eeg_old2.xdf &mdash; <span class="hw">7.1 GB</span><br>
+        sub-P001_..._eeg_old3/4/5.xdf &mdash; 1.3 GB + 421 MB + 176 MB<br>
+        <span class="dim">+ 8 more _old files across other subjects</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7 -->
+  <div class="issue">
+    <div class="issue-header">
+      <div class="issue-severity sev-info">INFO</div>
+      <div class="issue-title">Aborted / Minimal Recordings</div>
+      <div class="issue-impact">Cleanup</div>
+    </div>
+    <div class="issue-body">
+      <div class="issue-desc">
+        Several XDF files are under 1 MB, likely from aborted recording attempts or quick equipment tests. These contain insufficient data for analysis and should be archived separately.
+      </div>
+      <div class="issue-evidence">
+        sub-P009 &mdash; <span class="hl">56 KB</span> &nbsp;|&nbsp; session_20260305_150657 &mdash; <span class="hl">44 KB</span> &nbsp;|&nbsp; session_20260227_145319 &mdash; <span class="hl">241 KB</span><br>
+        sub-P001 (current, non-old) &mdash; <span class="hl">301 KB</span> &nbsp;|&nbsp; sub-090_ses-090 &mdash; <span class="hl">426 KB</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8 -->
+  <div class="issue">
+    <div class="issue-header">
+      <div class="issue-severity sev-info">INFO</div>
+      <div class="issue-title">Inconsistent BIDS Naming</div>
+      <div class="issue-impact">Organization</div>
+    </div>
+    <div class="issue-body">
+      <div class="issue-desc">
+        Subject and session identifiers use mixed conventions: zero-padded alphanumeric (sub-P001, ses-S001), bare numeric (sub-090, ses-1), and no subject ID at all (session_YYYYMMDD_HHMMSS). Task labels also vary (Default vs. Baseline). This complicates automated BIDS-compliant processing pipelines.
+      </div>
+      <div class="issue-evidence">
+        sub-P001_ses-S001_task-Default_run-001_eeg.xdf <span class="dim">&mdash; structured, zero-padded</span><br>
+        sub-090_ses-010_task-Baseline_run-001_.xdf <span class="dim">&mdash; different pattern, trailing underscore</span><br>
+        sub-2003_ses-1_task-Baseline_run-001_.xdf <span class="dim">&mdash; no zero-padding</span><br>
+        session_20260306_091530.xdf <span class="dim">&mdash;</span> <span class="hw">no subject ID</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Coverage matrix -->
+  <h2>Modality Coverage by Session Type</h2>
+  <table class="matrix-table">
+    <thead>
+      <tr>
+        <th>Session Type</th>
+        <th>EEG</th>
+        <th>fNIRS<br>Oxy</th>
+        <th>fNIRS<br>Deoxy</th>
+        <th>fNIRS<br>QA</th>
+        <th>Gaze<br>(Lab)</th>
+        <th>Gaze<br>(Mobile)</th>
+        <th>EMG</th>
+        <th>Hand /<br>Body</th>
+        <th>IMU</th>
+        <th>Audio</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Lab sessions (session_*)</td>
+        <td class="c-no">&mdash;</td>
+        <td class="c-yes">&#10003;</td>
+        <td class="c-yes">&#10003;</td>
+        <td class="c-yes">&#10003;</td>
+        <td class="c-yes">&#10003;</td>
+        <td class="c-no">&mdash;</td>
+        <td class="c-no">&mdash;</td>
+        <td class="c-yes">&#10003;</td>
+        <td class="c-no">&mdash;</td>
+        <td class="c-yes">&#10003;</td>
+      </tr>
+      <tr>
+        <td>BIDS subjects (sub-P00X)</td>
+        <td class="c-partial">?</td>
+        <td class="c-yes">&#10003;</td>
+        <td class="c-yes">&#10003;</td>
+        <td class="c-yes">&#10003;</td>
+        <td class="c-yes">&#10003;</td>
+        <td class="c-no">&mdash;</td>
+        <td class="c-no">&mdash;</td>
+        <td class="c-yes">&#10003;</td>
+        <td class="c-no">&mdash;</td>
+        <td class="c-yes">&#10003;</td>
+      </tr>
+      <tr>
+        <td>Mobile sessions</td>
+        <td class="c-yes">&#10003;</td>
+        <td class="c-no">&mdash;</td>
+        <td class="c-no">&mdash;</td>
+        <td class="c-no">&mdash;</td>
+        <td class="c-no">&mdash;</td>
+        <td class="c-yes">&#10003;</td>
+        <td class="c-no">&mdash;</td>
+        <td class="c-yes">&#10003;</td>
+        <td class="c-yes">&#10003;</td>
+        <td class="c-no">&mdash;</td>
+      </tr>
+      <tr>
+        <td>Target (full coverage)</td>
+        <td class="c-yes">&#10003;</td>
+        <td class="c-yes">&#10003;</td>
+        <td class="c-yes">&#10003;</td>
+        <td class="c-yes">&#10003;</td>
+        <td class="c-yes">&#10003;</td>
+        <td class="c-yes">&#10003;</td>
+        <td class="c-yes">&#10003;</td>
+        <td class="c-yes">&#10003;</td>
+        <td class="c-yes">&#10003;</td>
+        <td class="c-yes">&#10003;</td>
+      </tr>
+    </tbody>
+  </table>
 
   <!-- File health -->
-  <div class="section-title">File Size Distribution (Top 15)</div>
-  <div class="file-health">
-    <div class="fh-row">
-      <div class="fh-label">P001_old2</div>
-      <div class="fh-bar-container"><div class="fh-bar" style="width:100%;background:linear-gradient(90deg,var(--amber),var(--red))"></div></div>
-      <div class="fh-size">7.1 GB</div>
-      <div class="fh-tag" style="color:var(--amber)">_OLD</div>
-    </div>
-    <div class="fh-row">
-      <div class="fh-label">P001_old1</div>
-      <div class="fh-bar-container"><div class="fh-bar" style="width:65%;background:linear-gradient(90deg,var(--amber),var(--red))"></div></div>
-      <div class="fh-size">4.6 GB</div>
-      <div class="fh-tag" style="color:var(--amber)">_OLD</div>
-    </div>
-    <div class="fh-row">
-      <div class="fh-label">P002_old1</div>
-      <div class="fh-bar-container"><div class="fh-bar" style="width:52%;background:linear-gradient(90deg,var(--amber),var(--red))"></div></div>
-      <div class="fh-size">3.7 GB</div>
-      <div class="fh-tag" style="color:var(--amber)">_OLD</div>
-    </div>
-    <div class="fh-row">
-      <div class="fh-label">P007_ses-S007</div>
-      <div class="fh-bar-container"><div class="fh-bar" style="width:24%;background:linear-gradient(90deg,var(--accent),var(--green))"></div></div>
-      <div class="fh-size">1.7 GB</div>
-      <div class="fh-tag" style="color:var(--green)">GOOD</div>
-    </div>
-    <div class="fh-row">
-      <div class="fh-label">090_ses-030</div>
-      <div class="fh-bar-container"><div class="fh-bar" style="width:21%;background:linear-gradient(90deg,var(--accent),var(--green))"></div></div>
-      <div class="fh-size">1.5 GB</div>
-      <div class="fh-tag" style="color:var(--green)">GOOD</div>
-    </div>
-    <div class="fh-row">
-      <div class="fh-label">P001_old3</div>
-      <div class="fh-bar-container"><div class="fh-bar" style="width:18%;background:linear-gradient(90deg,var(--amber),var(--red))"></div></div>
-      <div class="fh-size">1.3 GB</div>
-      <div class="fh-tag" style="color:var(--amber)">_OLD</div>
-    </div>
-    <div class="fh-row">
-      <div class="fh-label">ses_0306_0915</div>
-      <div class="fh-bar-container"><div class="fh-bar" style="width:14%;background:linear-gradient(90deg,var(--accent),var(--green))"></div></div>
-      <div class="fh-size">967 MB</div>
-      <div class="fh-tag" style="color:var(--green)">GOOD</div>
-    </div>
-    <div class="fh-row">
-      <div class="fh-label">09031_ses-1</div>
-      <div class="fh-bar-container"><div class="fh-bar" style="width:10%;background:linear-gradient(90deg,var(--accent),var(--green))"></div></div>
-      <div class="fh-size">732 MB</div>
-      <div class="fh-tag" style="color:var(--green)">GOOD</div>
-    </div>
-    <div class="fh-row">
-      <div class="fh-label">ses_0305_2049</div>
-      <div class="fh-bar-container"><div class="fh-bar" style="width:9%;background:linear-gradient(90deg,var(--accent),var(--green))"></div></div>
-      <div class="fh-size">643 MB</div>
-      <div class="fh-tag" style="color:var(--green)">GOOD</div>
-    </div>
-    <div class="fh-row">
-      <div class="fh-label">ses_0302_1702</div>
-      <div class="fh-bar-container"><div class="fh-bar" style="width:8%;background:linear-gradient(90deg,var(--accent),var(--green))"></div></div>
-      <div class="fh-size">550 MB</div>
-      <div class="fh-tag" style="color:var(--green)">GOOD</div>
-    </div>
-    <div class="fh-row">
-      <div class="fh-label">ses_0305_2107</div>
-      <div class="fh-bar-container"><div class="fh-bar" style="width:7%;background:linear-gradient(90deg,var(--accent),var(--green))"></div></div>
-      <div class="fh-size">508 MB</div>
-      <div class="fh-tag" style="color:var(--green)">GOOD</div>
-    </div>
-    <div class="fh-row">
-      <div class="fh-label">P001_old4</div>
-      <div class="fh-bar-container"><div class="fh-bar" style="width:6%;background:linear-gradient(90deg,var(--amber),var(--red))"></div></div>
-      <div class="fh-size">421 MB</div>
-      <div class="fh-tag" style="color:var(--amber)">_OLD</div>
-    </div>
-    <div class="fh-row">
-      <div class="fh-label">ses_0306_1811</div>
-      <div class="fh-bar-container"><div class="fh-bar" style="width:3%;background:linear-gradient(90deg,var(--accent),var(--green))"></div></div>
-      <div class="fh-size">218 MB</div>
-      <div class="fh-tag" style="color:var(--green)">GOOD</div>
-    </div>
-    <div class="fh-row">
-      <div class="fh-label">ses_0302_1329</div>
-      <div class="fh-bar-container"><div class="fh-bar" style="width:3%;background:linear-gradient(90deg,var(--accent),var(--green))"></div></div>
-      <div class="fh-size">191 MB</div>
-      <div class="fh-tag" style="color:var(--green)">GOOD</div>
-    </div>
-    <div class="fh-row">
-      <div class="fh-label">P001_old5</div>
-      <div class="fh-bar-container"><div class="fh-bar" style="width:2.5%;background:linear-gradient(90deg,var(--amber),var(--red))"></div></div>
-      <div class="fh-size">176 MB</div>
-      <div class="fh-tag" style="color:var(--amber)">_OLD</div>
-    </div>
-  </div>
+  <h2>File Size Distribution (Top 15)</h2>
+  <table class="file-table">
+    <thead>
+      <tr><th>File</th><th>Size</th><th>Relative</th><th>Status</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="mono">sub-P001_old2</td><td class="mono">7.1 GB</td><td class="bar-cell"><div class="file-bar" style="width:100%;background:#ef6c00"></div></td><td><span class="tag-old">_OLD</span></td></tr>
+      <tr><td class="mono">sub-P001_old1</td><td class="mono">4.6 GB</td><td class="bar-cell"><div class="file-bar" style="width:65%;background:#ef6c00"></div></td><td><span class="tag-old">_OLD</span></td></tr>
+      <tr><td class="mono">sub-P002_old1</td><td class="mono">3.7 GB</td><td class="bar-cell"><div class="file-bar" style="width:52%;background:#ef6c00"></div></td><td><span class="tag-old">_OLD</span></td></tr>
+      <tr><td class="mono">sub-P007_ses-S007</td><td class="mono">1.7 GB</td><td class="bar-cell"><div class="file-bar" style="width:24%;background:#2e7d32"></div></td><td><span class="tag-good">GOOD</span></td></tr>
+      <tr><td class="mono">sub-090_ses-030</td><td class="mono">1.5 GB</td><td class="bar-cell"><div class="file-bar" style="width:21%;background:#2e7d32"></div></td><td><span class="tag-good">GOOD</span></td></tr>
+      <tr><td class="mono">sub-P001_old3</td><td class="mono">1.3 GB</td><td class="bar-cell"><div class="file-bar" style="width:18%;background:#ef6c00"></div></td><td><span class="tag-old">_OLD</span></td></tr>
+      <tr><td class="mono">session_0306_091530</td><td class="mono">967 MB</td><td class="bar-cell"><div class="file-bar" style="width:13%;background:#2e7d32"></div></td><td><span class="tag-good">GOOD</span></td></tr>
+      <tr><td class="mono">sub-09031_ses-1</td><td class="mono">732 MB</td><td class="bar-cell"><div class="file-bar" style="width:10%;background:#2e7d32"></div></td><td><span class="tag-good">GOOD</span></td></tr>
+      <tr><td class="mono">session_0305_204932</td><td class="mono">643 MB</td><td class="bar-cell"><div class="file-bar" style="width:9%;background:#2e7d32"></div></td><td><span class="tag-good">GOOD</span></td></tr>
+      <tr><td class="mono">session_0302_170251</td><td class="mono">550 MB</td><td class="bar-cell"><div class="file-bar" style="width:8%;background:#2e7d32"></div></td><td><span class="tag-good">GOOD</span></td></tr>
+      <tr><td class="mono">session_0305_210738</td><td class="mono">508 MB</td><td class="bar-cell"><div class="file-bar" style="width:7%;background:#2e7d32"></div></td><td><span class="tag-good">GOOD</span></td></tr>
+      <tr><td class="mono">sub-P001_old4</td><td class="mono">421 MB</td><td class="bar-cell"><div class="file-bar" style="width:6%;background:#ef6c00"></div></td><td><span class="tag-old">_OLD</span></td></tr>
+      <tr><td class="mono">session_0306_181143</td><td class="mono">218 MB</td><td class="bar-cell"><div class="file-bar" style="width:3%;background:#2e7d32"></div></td><td><span class="tag-good">GOOD</span></td></tr>
+      <tr><td class="mono">sub-P009</td><td class="mono">56 KB</td><td class="bar-cell"><div class="file-bar" style="width:1%;background:#d32f2f"></div></td><td><span class="tag-tiny">EMPTY</span></td></tr>
+      <tr><td class="mono">session_0305_150657</td><td class="mono">44 KB</td><td class="bar-cell"><div class="file-bar" style="width:1%;background:#d32f2f"></div></td><td><span class="tag-tiny">EMPTY</span></td></tr>
+    </tbody>
+  </table>
 
   <!-- Recommendations -->
-  <div class="section-title">Recommendations</div>
-  <div class="rec-list">
-    <div class="rec-item">
-      <div class="rec-icon">01</div>
-      <div class="rec-text">
-        <strong>Run a combined lab + mobile session.</strong> Connect DSI-24, Kernel Flow, Gazepoint, StretchSense, and Delsys simultaneously into a single LabRecorder instance. This is the highest-priority gap — without it, cross-modal EEG-fNIRS analysis is impossible.
-      </div>
-    </div>
-    <div class="rec-item">
-      <div class="rec-icon">02</div>
-      <div class="rec-text">
-        <strong>Fix Kernel Flow stream metadata.</strong> Update the nominal_srate in kernel_flow_lsl.py to match the actual output rate (~10-13 Hz), or configure Kortex to output at a stable declared rate. This will fix LSL timestamp correction.
-      </div>
-    </div>
-    <div class="rec-item">
-      <div class="rec-icon">03</div>
-      <div class="rec-text">
-        <strong>Record at least 3 more subjects</strong> with the full multi-modal stack to establish between-subject baselines. Target 5+ minute continuous recordings per session for meaningful spectral and correlation analysis.
-      </div>
-    </div>
-    <div class="rec-item">
-      <div class="rec-icon">04</div>
-      <div class="rec-text">
-        <strong>Standardize BIDS naming.</strong> Use consistent zero-padded subject/session IDs across all recordings. Move session_* files into the sub-XXX folder structure. Archive or delete _old files after verification.
-      </div>
-    </div>
-    <div class="rec-item">
-      <div class="rec-icon">05</div>
-      <div class="rec-text">
-        <strong>Add pre-recording checklist to start_all.bat</strong> that verifies all streams are active and at expected rates before LabRecorder begins. This will prevent aborted/empty recordings and catch rate anomalies early.
-      </div>
-    </div>
-  </div>
+  <h2>Recommendations</h2>
+  <table class="rec-table">
+    <thead>
+      <tr><th>#</th><th>Priority</th><th>Action</th><th>Addresses</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="rec-num">1</td>
+        <td><span class="rec-priority pri-high">HIGH</span></td>
+        <td><strong>Run a combined lab + mobile session.</strong> Connect DSI-24, Kernel Flow, Gazepoint, StretchSense, and Delsys simultaneously into a single LabRecorder instance. This is the only way to enable cross-modal EEG-fNIRS analysis.</td>
+        <td>Issues #1, #2</td>
+      </tr>
+      <tr>
+        <td class="rec-num">2</td>
+        <td><span class="rec-priority pri-high">HIGH</span></td>
+        <td><strong>Fix Kernel Flow stream metadata.</strong> Update <code>nominal_srate</code> in <code>kernel_flow_lsl.py</code> to match actual output (~10-13 Hz), or configure Kortex to output at a stable declared rate. Verify with <code>check_streams.py</code>.</td>
+        <td>Issue #3</td>
+      </tr>
+      <tr>
+        <td class="rec-num">3</td>
+        <td><span class="rec-priority pri-high">HIGH</span></td>
+        <td><strong>Record 3+ additional subjects</strong> with the full multi-modal stack. Target 5+ minute continuous recordings per session to establish between-subject baselines and enable group-level analysis.</td>
+        <td>Issue #1</td>
+      </tr>
+      <tr>
+        <td class="rec-num">4</td>
+        <td><span class="rec-priority pri-med">MEDIUM</span></td>
+        <td><strong>Standardize BIDS naming.</strong> Use consistent zero-padded subject/session IDs. Rename <code>session_*</code> files into <code>sub-XXX</code> folder structure. Archive _old files after verification.</td>
+        <td>Issues #6, #8</td>
+      </tr>
+      <tr>
+        <td class="rec-num">5</td>
+        <td><span class="rec-priority pri-low">LOW</span></td>
+        <td><strong>Add pre-recording validation to <code>start_all.bat</code></strong> that verifies all streams are active and at expected rates before LabRecorder starts. This prevents empty/aborted recordings and catches rate anomalies.</td>
+        <td>Issues #4, #5, #7</td>
+      </tr>
+    </tbody>
+  </table>
 
-  <!-- Footer -->
   <div class="footer">
-    <div class="footer-text">NETHOLABS &middot; DATA QUALITY ASSESSMENT &middot; MARCH 2026</div>
+    <span>Netholabs &mdash; Functional Brain Emulation</span>
+    <span>Data Quality Assessment &mdash; March 2026</span>
   </div>
 
 </div>
-
 </body>
 </html>
